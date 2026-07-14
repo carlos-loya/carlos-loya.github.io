@@ -4,7 +4,23 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>portfolio</title>
+    <title>Carlos Loya — Full-stack Engineer</title>
+    <meta name="description" content="Carlos Loya — full-stack engineer, backend-strong. I build data platforms, Kubernetes operators, and the pipelines that feed them." />
+    <meta property="og:title" content="Carlos Loya — Full-stack Engineer" />
+    <meta property="og:description" content="Full-stack engineer, backend-strong. Data platforms, Kubernetes operators, and the pipelines that feed them." />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#0e1116" />
+    <script>
+      // Set theme before paint to avoid a flash of the wrong theme.
+      (function () {
+        try {
+          var stored = localStorage.getItem('theme');
+          var dark = stored ? stored === 'dark'
+            : window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (dark) document.documentElement.classList.add('dark');
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

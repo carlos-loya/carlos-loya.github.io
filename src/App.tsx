@@ -1,10 +1,23 @@
+import { Nav } from "./components/Nav";
+import { Hero } from "./components/Hero";
+import { Skills } from "./components/Skills";
+import { Projects } from "./components/Projects";
+import { Experience } from "./components/Experience";
+import { Contact } from "./components/Contact";
+
 function App() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-neutral-950 text-neutral-100">
-      <h1 className="text-5xl font-bold tracking-tight">Carlos Loya</h1>
-      <p className="text-lg text-neutral-400">Portfolio in progress.</p>
-    </main>
-  )
+    <>
+      <Nav />
+      <main>
+        <Hero />
+        <Skills />
+        <Projects />
+        <Experience />
+        <Contact />
+      </main>
+    </>
+  );
 }
 
-export default App
+export default App;

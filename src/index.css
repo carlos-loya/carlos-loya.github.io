@@ -1,1 +1,52 @@
 @import "tailwindcss";
+
+/* class-based dark mode (toggled on <html>) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Muted Slate design tokens — light is the default, .dark overrides below.
+   Registered in @theme so utilities like bg-bg / text-fg-strong / border-brd work. */
+@theme {
+  --color-bg: #fbfcfd;
+  --color-panel: #ffffff;
+  --color-panel-2: #f4f6f8;
+  --color-brd: #e3e7ec;
+  --color-brd-soft: #eef1f4;
+  --color-fg: #3c444e;
+  --color-fg-strong: #14181d;
+  --color-fg-dim: #8a929c;
+  --color-accent: #3d6ea5;
+  --color-accent-hi: #2f5c8f;
+
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+/* dark (base identity) */
+.dark {
+  --color-bg: #0e1116;
+  --color-panel: #161b22;
+  --color-panel-2: #1b2129;
+  --color-brd: #232a35;
+  --color-brd-soft: #1a2029;
+  --color-fg: #c9d1d9;
+  --color-fg-strong: #e6edf3;
+  --color-fg-dim: #6e7681;
+  --color-accent: #6b8cbe;
+  --color-accent-hi: #90aed9;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem; /* offset sticky nav for anchor jumps */
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
