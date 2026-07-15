@@ -32,7 +32,10 @@ export function Timeline({ data }: { data: TimelineEntry[] }) {
     <div ref={containerRef} className="w-full">
       <div ref={ref} className="relative pb-4">
         {data.map((item, index) => (
-          <div key={index} className="flex justify-start pt-8 md:gap-10">
+          <div
+            key={index}
+            className="flex min-h-[60vh] justify-start pt-8 md:gap-10"
+          >
             <div className="sticky top-24 z-40 flex max-w-xs flex-col items-center self-start md:w-full md:flex-row lg:max-w-sm">
               <div className="absolute left-1 flex h-9 w-9 items-center justify-center rounded-full bg-bg md:left-1">
                 <div className="h-3 w-3 rounded-full border border-brd bg-panel-2" />
