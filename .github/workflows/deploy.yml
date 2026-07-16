@@ -25,7 +25,10 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - run: npm ci
+      # Use `npm install`, not `npm ci`: rolldown (Vite 8) pulls in optional
+      # wasm-binding deps (@emnapi/*) whose patch versions drift between npm
+      # cache states, which makes `npm ci`'s strict lockfile check flaky.
+      - run: npm install --no-audit --no-fund
       - run: npm run build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
