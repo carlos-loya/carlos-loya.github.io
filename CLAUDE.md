@@ -37,26 +37,36 @@ The six layers (source of truth: `src/descent.ts`):
 
 ## Architecture (important)
 
-**Two layers, one codebase:**
+**Two presentations of the same data, chosen at runtime in `App.tsx` via
+`useEnable3D()`:**
 
-1. **DOM content layer** — the real, accessible, SEO-visible site. Every section
-   is wrapped in `<Layer>` (`components/Layer.tsx`), which renders the machine
-   readout header (code · name · depth) + display title. This layer stands
-   entirely on its own.
-2. **WebGL layer** (`src/three/DescentCanvas.tsx`) — a `position:fixed` canvas
-   *behind* the DOM (`-z-10`, `pointer-events:none`). The camera descends driven
-   by the **same window scroll** (framer-motion `useScroll`), NOT drei
-   `ScrollControls`. The DOM is never re-parented into the canvas.
+1. **Cinematic descent (capable desktops)** — a full-viewport WebGL flight. Files
+   in `src/three/`:
+   - `DescentCanvas.tsx` → exports `CinematicDescent`: the `<Canvas>` with drei
+     `<ScrollControls pages={6} damping>` (its damping is the momentum — no
+     Lenis/GSAP). Contains the 3D `Scene` and the content in `<Scroll html>`.
+   - `path.ts` — the shared `CatmullRomCurve3` flight path + `BEAT` offsets. The
+     camera samples this by scroll offset with a look-ahead, so it banks/turns
+     (a flight, not an elevator). Content is **six equal 100vh blocks**, so block
+     *i* centers at offset **i/5** — `BEAT` values must match, or structures and
+     text drift apart.
+   - `structures.tsx` — the six procedural environments (gantry, control lattice,
+     data corridor, server hall, deployment bay, core cage), placed along the path
+     at `BEAT` offsets.
+   - `CinematicContent.tsx` — the lean docked text panels (one `<Beat>` per layer),
+     over a left→right scrim for legibility. More compact than the static site by
+     design; full detail lives in the static site + résumé.
+2. **Static site (mobile / reduced-motion / fallback)** — the original stacked
+   `<Layer>` sections (`Hero`, `Skills`, `DataPlane`, `Infrastructure`, `Projects`,
+   `Contact`) + the `DescentHud` gauge. Fully accessible and SEO-visible, stands on
+   its own. This is also the `<Suspense>` fallback while the 3D chunk loads.
 
-**The 3D is gated and lazy.** `useEnable3D()` mounts it only on capable desktops
-(`min-width:768px`, no `prefers-reduced-motion`, WebGL present). It's a
-`React.lazy` chunk, so mobile / reduced-motion visitors never download three.js —
-they get the clean static DOM site. **Preserve this gate**; it's how
-accessibility, mobile, and legibility are satisfied.
-
-The signature element is the fixed left-rail depth gauge
-(`components/DescentHud.tsx`): filling bar, live depth readout, layer codes
-lighting up via IntersectionObserver.
+**The 3D is gated and lazy.** `useEnable3D()` returns true only on capable desktops
+(`min-width:768px`, no `prefers-reduced-motion`, WebGL present). `CinematicDescent`
+is a `React.lazy` chunk, so the static branch never downloads three.js. **Preserve
+this gate and the static fallback** — it's how accessibility, mobile, and
+legibility are satisfied. Content for both comes from `src/content/*.ts`; never
+fork the data.
 
 ## Conventions
 
@@ -89,8 +99,9 @@ viewport and reduced-motion both fall back to the static DOM with content intact
 
 ## Status / next
 
-The concept is built and verified end to end (see
-`~/.claude/plans/i-want-to-redesign-concurrent-codd.md` for the full spec). This
-is an evolving design — expect to refine scenes, motion, and polish. Deliberately
-NOT done: bespoke per-layer 3D set-pieces (the "just the vibe" choice favors the
-current restrained scene). Confirm with Carlos before adding heavier spectacle.
+The cinematic descent is built and verified end to end. It's an evolving design —
+the structures in `structures.tsx` and their `BEAT` placement are the main knobs
+for art direction; expect to fine-tune per-beat framing, camera speed variation,
+and structure detail. A known dev-only `createRoot` warning comes from drei
+`<Scroll html>` under `StrictMode`; production is clean (verified via
+`npm run preview`).
