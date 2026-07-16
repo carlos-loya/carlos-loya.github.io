@@ -17,7 +17,7 @@ export function Contact() {
     <Layer
       meta={meta}
       as="footer"
-      title="You've reached the core"
+      title="You've reached the desk"
       subtitle="Open to full-stack and backend roles, and to interesting builds. Email is the fastest path in — I read everything."
     >
       <div className="flex flex-wrap gap-3">
@@ -35,12 +35,15 @@ export function Contact() {
       </div>
 
       <div className="mt-14 flex items-center gap-3 border-t border-brd-soft pt-6 font-mono text-[11px] tracking-[0.12em] text-fg-dim">
-        <span className="text-accent">EOF</span>
+        <span className="text-accent">↓ 0m</span>
         <span>
           © {new Date().getFullYear()} {profile.name}
         </span>
+        <a href="/attribution.md" target="_blank" rel="noreferrer noopener" className="text-fg-dim/60 transition-colors hover:text-accent">
+          3D credits
+        </a>
         <a href="#top" className="ml-auto text-fg-dim/60 transition-colors hover:text-accent">
-          ↑ RETURN TO SURFACE
+          ↑ BACK TO THE SKY
         </a>
       </div>
     </Layer>

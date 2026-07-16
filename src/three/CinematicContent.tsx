@@ -22,7 +22,7 @@ function Header({ layer }: { layer: LayerMeta }) {
         <span className="text-accent">{layer.code}</span>
         <span className="text-fg-dim">{layer.name}</span>
         <span className="ml-auto tabular-nums text-fg-dim/60">
-          DEPTH −{String(layer.depth).padStart(4, "0")}m
+          ↓ {String(layer.depth).padStart(4, "0")}m
         </span>
       </div>
       <div className="mt-3 h-px w-full bg-gradient-to-r from-accent/50 via-brd to-transparent" />
@@ -34,9 +34,11 @@ function Header({ layer }: { layer: LayerMeta }) {
 // vertically centered, over a left→right scrim.
 function Beat({ layer, wide, children }: { layer: LayerMeta; wide?: boolean; children: ReactNode }) {
   return (
-    <section className="relative flex min-h-screen items-center px-6 sm:px-14">
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-bg via-bg/60 to-transparent" />
-      <div className={`relative w-full ${wide ? "max-w-2xl" : "max-w-lg"}`}>
+    // pointer-events-none so clicks pass through to the 3D canvas (e.g. the
+    // CRTs); re-enabled only on the docked panel so its links stay clickable.
+    <section className="pointer-events-none relative flex min-h-screen items-center px-6 sm:px-14">
+      <div className="absolute inset-0 bg-gradient-to-r from-bg/95 via-bg/70 to-transparent" />
+      <div className={`pointer-events-auto relative w-full ${wide ? "max-w-2xl" : "max-w-lg"}`}>
         <Header layer={layer} />
         <div className="mt-6">{children}</div>
       </div>
@@ -59,8 +61,10 @@ function Headline() {
 
 export function CinematicContent() {
   return (
-    <div className="w-screen">
-      {/* L0 · SURFACE */}
+    // The whole HTML layer is pointer-transparent so clicks reach the 3D CRTs;
+    // only the docked panels (below) opt back in via pointer-events-auto.
+    <div className="pointer-events-none w-screen">
+      {/* L0 · SKY */}
       <Beat layer={byId("top")} wide>
         <p className="font-mono text-xs uppercase tracking-[0.18em] text-fg-dim">
           {profile.eyebrow}
@@ -85,9 +89,9 @@ export function CinematicContent() {
       {/* L1 · CONTROL */}
       <Beat layer={byId("control")}>
         <h2 className="font-display text-3xl font-black uppercase tracking-tight text-fg-strong sm:text-4xl">
-          The control layer
+          What I reach for
         </h2>
-        <p className="mt-3 text-sm text-fg-dim">The stack I reach for, by depth.</p>
+        <p className="mt-3 text-sm text-fg-dim">The stack I build with.</p>
         <dl className="mt-6 space-y-4">
           {skillGroups.map((g) => (
             <div key={g.title}>
@@ -101,14 +105,14 @@ export function CinematicContent() {
       {/* L2 · DATA_PLANE */}
       <Beat layer={byId("data-plane")}>
         <h2 className="font-display text-3xl font-black uppercase tracking-tight text-fg-strong sm:text-4xl">
-          Systems in production
+          Systems I've shipped
         </h2>
         <p className="mt-3 max-w-[44ch] text-sm text-fg-dim">{experience[0].summary}</p>
         <ol className="mt-6 space-y-4">
           {experience[0].points.map((pt, i) => (
             <li key={i} className="border-l-2 border-accent/40 pl-4">
               <span className="font-mono text-[11px] tracking-[0.14em] text-accent">
-                SYS_{String(i + 1).padStart(2, "0")}
+                {String(i + 1).padStart(2, "0")}
               </span>
               <p className="mt-1 text-[14.5px] leading-relaxed text-fg">{pt}</p>
             </li>
@@ -119,7 +123,7 @@ export function CinematicContent() {
       {/* L3 · INFRASTRUCTURE */}
       <Beat layer={byId("infrastructure")}>
         <h2 className="font-display text-3xl font-black uppercase tracking-tight text-fg-strong sm:text-4xl">
-          Down to the metal
+          Where I've worked
         </h2>
         <ul className="mt-6 space-y-5">
           {experience.slice(1).map((r) => (
@@ -137,9 +141,11 @@ export function CinematicContent() {
       {/* L4 · PROVING_GROUND */}
       <Beat layer={byId("proving-ground")}>
         <h2 className="font-display text-3xl font-black uppercase tracking-tight text-fg-strong sm:text-4xl">
-          Proving ground
+          Hall of fame
         </h2>
-        <p className="mt-3 text-sm text-fg-dim">Shipped and running in the wild.</p>
+        <p className="mt-3 text-sm text-fg-dim">
+          Shipped and running in the wild — <span className="text-accent">click a screen</span> to open it.
+        </p>
         <ul className="mt-6 space-y-5">
           {sites.map((s) => (
             <li key={s.name} className="border-l-2 border-accent/40 pl-4">
@@ -166,10 +172,10 @@ export function CinematicContent() {
       {/* L5 · CORE */}
       <Beat layer={byId("core")}>
         <h2 className="font-display text-3xl font-black uppercase tracking-tight text-fg-strong sm:text-5xl">
-          You've reached the core
+          You've reached the desk
         </h2>
         <p className="mt-4 max-w-[46ch] text-[15px] leading-relaxed text-fg-dim">
-          Open to full-stack and backend roles, and to interesting builds. Email is the fastest path in.
+          Open to full-stack and backend roles, and to interesting builds. Email is the fastest way in.
         </p>
         <div className="mt-7 flex flex-wrap gap-3">
           {[
@@ -184,7 +190,10 @@ export function CinematicContent() {
           ))}
         </div>
         <p className="mt-10 font-mono text-[11px] tracking-[0.12em] text-fg-dim">
-          <span className="text-accent">EOF</span> · © {new Date().getFullYear()} {profile.name}
+          <span className="text-accent">↓ 0m</span> · © {new Date().getFullYear()} {profile.name} ·{" "}
+          <a href="/attribution.md" target="_blank" rel="noreferrer noopener" className="underline decoration-dotted underline-offset-2 transition-colors hover:text-accent">
+            3D credits
+          </a>
         </p>
       </Beat>
     </div>

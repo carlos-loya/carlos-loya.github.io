@@ -9,31 +9,38 @@ Pages via `.github/workflows/deploy.yml` on push to `main`. Stack: React 19 +
 Vite + Tailwind v4 (`@theme` tokens, no config file) + framer-motion +
 react-three-fiber.
 
-## The concept: "Descent Into The Machine"
+## The concept: "Descent from the clouds"
 
 The site is **one immersive vertical WebGL journey**, not a stack of resume
-sections. Scrolling drives a camera *down* through six depth layers, mapped onto
-Carlos's real work. The visitor falls from the interface to the core.
+sections. Scrolling flies a camera *down* through a small, bright, low-poly
+world — a charming *Katamari Damacy*-flavored miniature — from high in the clouds,
+down through the yard, **through the front door of a little (closed) house**, and
+inside: a **hall of fame** where the camera turns to a wall of clickable monitors
+showing Carlos's live sites, ending at his **desk**, where he sits (back to
+camera) with a coffee cup.
 
 Design direction (locked with Carlos — keep to it):
 - **"Show, don't tell."** Demonstrate capability; don't recite a resume.
-- **Evangelion as undertone, not costume** — near-black void, ONE crimson accent
-  (`--color-accent` `#e8102a`), amber only for system readouts, cold infra grays,
-  technical/mono type, ominous quiet. Restraint over maximalism.
-- **Dark-only.** There is no light mode; don't add one.
+- **Bright, clear-daytime low-poly.** Pale sky, warm sun, green ground; ONE
+  warm-coral accent (`--color-accent` `#ee6c4d`). Charming and friendly.
+- **Real CC0/CC-BY glTF models** now carry the props (see `public/attribution.md`
+  + the "3D credits" footer link — CC-BY needs the visible credit). Loaded via
+  `useGLTF` in `src/three/models.tsx`, auto-normalized by bounding box.
+- **Performance-first.** No postprocessing, no shaders, no raymarching — models +
+  real (cheap) lighting. It must stay smooth.
 - **Audience is employers, clients, AND peers** — spectacle must not cost
   legibility. The facts stay extractable.
 
-The six layers (source of truth: `src/descent.ts`):
+The six beats (source of truth: `src/descent.ts`):
 
-| Code | id | Content |
-|---|---|---|
-| L0 SURFACE | `top` | Hero (`profile.ts`) |
-| L1 CONTROL | `control` | Skills (`skills.ts`) |
-| L2 DATA_PLANE | `data-plane` | Independent systems — `experience[0]` |
-| L3 INFRASTRUCTURE | `infrastructure` | Employed roles — `experience.slice(1)` |
-| L4 PROVING_GROUND | `proving-ground` | Live sites (`projects.ts`) |
-| L5 CORE | `core` | Contact |
+| Code | id | Scene | Content |
+|---|---|---|---|
+| L0 SKY | `top` | High in the clouds | Hero (`profile.ts`) |
+| L1 CLOUDLINE | `control` | World appears below | Skills (`skills.ts`) |
+| L2 THE YARD | `data-plane` | The house, on the ground | Independent systems — `experience[0]` |
+| L3 THE THRESHOLD | `infrastructure` | Door opens, camera enters | Employed roles — `experience.slice(1)` |
+| L4 HALL OF FAME | `proving-ground` | Camera turns to a wall of clickable site monitors | Live sites (`projects.ts`) |
+| L5 THE DESK | `core` | Carlos seated (Man model), back to camera, coffee | Contact |
 
 ## Architecture (important)
 
@@ -50,12 +57,25 @@ The six layers (source of truth: `src/descent.ts`):
      (a flight, not an elevator). Content is **six equal 100vh blocks**, so block
      *i* centers at offset **i/5** — `BEAT` values must match, or structures and
      text drift apart.
-   - `structures.tsx` — the six procedural environments (gantry, control lattice,
-     data corridor, server hall, deployment bay, core cage), placed along the path
-     at `BEAT` offsets.
+   - `structures.tsx` — exports `World`: outdoor scenery (clouds, island, yard
+     trees) anchored to `BEAT` offsets via `anchor()`, plus the **fixed** interior
+     tied to the `HOUSE` layout in `path.ts`: the closed `HouseShell` (+ `Roof`,
+     `Window`), the scroll-driven `Door`, the entry, the `HallOfFame`, and the
+     `Office`. Anchor outdoor scenery to where the camera *is* at that offset,
+     never hardcoded world coords, or framing drifts.
+   - `models.tsx` — `useGLTF` wrappers (`ModelCloud/Tree/Desk/Chair/Monitor/`
+     `Plant/Pot/Cup`) that clone + **auto-normalize each glTF by bounding box**
+     (glТF exports arrive at wildly different scales) + `useGLTF.preload`.
+   - `props.tsx` — remaining procedural bits (`House`, `Island`, `Slab`, `Rug`,
+     `Window` helpers) + the flat-shaded `mat()` cache and `PAL` palette.
+   - `Character.tsx` — the seated **Man** glТF playing its `Man_Sitting` clip
+     (`useAnimations`), auto-normalized. Swappable rig.
+   - `HallDisplay.tsx` — a hall-of-fame monitor: `ModelMonitor` + a screenshot
+     plane (`useTexture` `/previews/*.jpg`) + a drei `<Text>` nameplate; `onClick`
+     opens the site, hover lifts it.
    - `CinematicContent.tsx` — the lean docked text panels (one `<Beat>` per layer),
-     over a left→right scrim for legibility. More compact than the static site by
-     design; full detail lives in the static site + résumé.
+     over a left→right light scrim for legibility. More compact than the static
+     site by design; full detail lives in the static site + résumé.
 2. **Static site (mobile / reduced-motion / fallback)** — the original stacked
    `<Layer>` sections (`Hero`, `Skills`, `DataPlane`, `Infrastructure`, `Projects`,
    `Contact`) + the `DescentHud` gauge. Fully accessible and SEO-visible, stands on
@@ -75,15 +95,20 @@ fork the data.
   components, and don't fabricate content — mapping to layers must stay truthful.
 - **Design tokens** are in `src/index.css` under `@theme`. Token *names* are kept
   from the old theme (`bg`, `panel`, `brd`, `fg`, `fg-strong`, `accent`…) so
-  Tailwind utilities like `bg-bg` / `text-fg-strong` resolve. Add `font-display`
-  = Archivo (headlines), `font-sans` = Inter (body), `font-mono` = JetBrains Mono
-  (labels/readouts).
+  Tailwind utilities like `bg-bg` / `text-fg-strong` resolve — but the *values*
+  are now clear-daytime (light bg, dark ink, warm-coral accent). `color-scheme:
+  light`. Flipping token values re-themes the static site and the docked panels
+  together. Fonts: `font-display` = Archivo (headlines), `font-sans` = Inter
+  (body), `font-mono` = JetBrains Mono (labels/readouts).
 - **Reveals**: wrap scroll-in animations in `<Reveal>` (`components/Reveal.tsx`);
   it and `useInView` already no-op under reduced-motion. Reuse them.
-- Keep new 3D scene code in `src/three/`. Scenes are **procedural** (geometry +
-  particles + fog + additive glow) — no imported 3D models. Bloom is faked with
-  additive halos; `@react-three/postprocessing` was removed (React 19 hook
-  mismatch) — don't re-add it without checking that.
+- Keep new 3D scene code in `src/three/`. Props are CC0/CC-BY glТF via `useGLTF`
+  (`models.tsx`, drop `.glb` in `public/models/`, add the credit to
+  `public/attribution.md`) with a few flat-shaded primitives (`props.tsx`). Lit by
+  a hemisphere + one shadow-casting sun + a few interior point lights (the closed
+  roof shadows out the sun indoors), light-blue fog. **No postprocessing, no
+  custom shaders, no raymarching** (an earlier bloom/raymarch pass killed
+  performance; don't reintroduce it).
 
 ## Commands
 
@@ -94,14 +119,17 @@ fork the data.
 ## Verifying changes
 
 Drive it, don't just typecheck. `npm run dev`, then in a browser: scroll the full
-descent BOOT→CORE and confirm each layer + the camera motion; check a narrow
-viewport and reduced-motion both fall back to the static DOM with content intact.
+descent SKY→THE DESK and confirm each beat is framed + the camera motion + the
+CRTs show screenshots and click through; check a narrow viewport and
+reduced-motion both fall back to the static DOM with content intact.
 
 ## Status / next
 
-The cinematic descent is built and verified end to end. It's an evolving design —
-the structures in `structures.tsx` and their `BEAT` placement are the main knobs
-for art direction; expect to fine-tune per-beat framing, camera speed variation,
-and structure detail. A known dev-only `createRoot` warning comes from drei
-`<Scroll html>` under `StrictMode`; production is clean (verified via
-`npm run preview`).
+The low-poly descent skeleton is built and verified end to end (v1). It's an
+evolving design — the scenery in `structures.tsx`/`props.tsx` and its `anchor()`
+placement are the main knobs; expect to fine-tune per-beat framing, prop density,
+and the final camera framing at the building. **Assets are procedural for now;
+the intended polish is to swap in cohesive CC0 low-poly glTF packs**
+(Kenney/Quaternius/Poly Pizza) per prop via `useGLTF`. A known dev-only
+`createRoot` warning comes from drei `<Scroll html>` under `StrictMode`;
+production is clean (verified via `npm run preview`).

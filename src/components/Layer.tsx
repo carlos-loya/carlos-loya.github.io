@@ -28,7 +28,7 @@ export function Layer({
             <span className="text-accent">{meta.code}</span>
             <span className="text-fg-dim">{meta.name}</span>
             <span className="ml-auto tabular-nums text-fg-dim/60">
-              DEPTH −{String(meta.depth).padStart(4, "0")}m
+              ↓ {String(meta.depth).padStart(4, "0")}m
             </span>
           </div>
           <div className="mt-3 h-px w-full bg-gradient-to-r from-accent/50 via-brd to-transparent" />

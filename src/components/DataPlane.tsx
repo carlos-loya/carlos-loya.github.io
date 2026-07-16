@@ -11,7 +11,7 @@ export function DataPlane() {
   return (
     <Layer
       meta={meta}
-      title="Systems in production"
+      title="Systems I've shipped"
       subtitle={role.summary}
     >
       <div className="space-y-3.5">
@@ -21,7 +21,7 @@ export function DataPlane() {
               <span className="absolute inset-y-4 left-0 w-0.5 rounded-full bg-accent/40 transition-colors group-hover:bg-accent" />
               <div className="mb-2.5 flex items-center gap-3 font-mono text-[11px] tracking-[0.14em]">
                 <span className="text-accent">
-                  SYS_{String(i + 1).padStart(2, "0")}
+                  {String(i + 1).padStart(2, "0")}
                 </span>
                 <span className="text-fg-dim/70">● IN PRODUCTION</span>
               </div>

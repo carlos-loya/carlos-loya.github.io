@@ -33,15 +33,15 @@ export function Hero() {
       className="relative flex min-h-screen scroll-mt-20 flex-col justify-center px-6 pt-24 pb-16 sm:px-8"
     >
       <div className="mx-auto w-full max-w-4xl">
-        {/* boot / surface readout */}
+        {/* sky readout */}
         <div className="flex items-center gap-3 font-mono text-[11px] tracking-[0.16em]">
           <span className="text-accent">L0</span>
-          <span className="text-fg-dim">SURFACE</span>
+          <span className="text-fg-dim">SKY</span>
           <span className="flex items-center gap-1.5 text-fg-dim/70">
             <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
-            SYSTEM ONLINE
+            CLEAR SKIES
           </span>
-          <span className="ml-auto tabular-nums text-fg-dim/60">DEPTH −0000m</span>
+          <span className="ml-auto tabular-nums text-fg-dim/60">↓ 0000m</span>
         </div>
         <div className="mt-3 h-px w-full bg-gradient-to-r from-accent/50 via-brd to-transparent" />
 

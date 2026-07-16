@@ -66,7 +66,7 @@ export function Projects() {
   return (
     <Layer
       meta={meta}
-      title="Proving ground"
+      title="Hall of fame"
       subtitle="Sites I've designed, built, and shipped — running in the wild. Enter any of them."
     >
       <Reveal className="grid grid-cols-1 gap-4 sm:grid-cols-2">

@@ -10,12 +10,12 @@ export interface Layer {
 }
 
 export const layers: Layer[] = [
-  { id: "top", code: "L0", name: "SURFACE", nav: "Top", depth: 0 },
-  { id: "control", code: "L1", name: "CONTROL", nav: "Stack", depth: 140 },
-  { id: "data-plane", code: "L2", name: "DATA_PLANE", nav: "Systems", depth: 360 },
-  { id: "infrastructure", code: "L3", name: "INFRASTRUCTURE", nav: "Experience", depth: 680 },
-  { id: "proving-ground", code: "L4", name: "PROVING_GROUND", nav: "Work", depth: 940 },
-  { id: "core", code: "L5", name: "CORE", nav: "Contact", depth: 1200 },
+  { id: "top", code: "L0", name: "SKY", nav: "Top", depth: 0 },
+  { id: "control", code: "L1", name: "CLOUDLINE", nav: "Stack", depth: 140 },
+  { id: "data-plane", code: "L2", name: "THE YARD", nav: "Systems", depth: 360 },
+  { id: "infrastructure", code: "L3", name: "THE THRESHOLD", nav: "Experience", depth: 680 },
+  { id: "proving-ground", code: "L4", name: "HALL OF FAME", nav: "Work", depth: 940 },
+  { id: "core", code: "L5", name: "THE DESK", nav: "Contact", depth: 1200 },
 ];
 
 export const MAX_DEPTH = layers[layers.length - 1].depth;

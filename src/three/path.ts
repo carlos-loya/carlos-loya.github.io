@@ -1,26 +1,45 @@
 import * as THREE from "three";
 
-// The descent flight path. The camera samples this as scroll goes 0→1; the
-// structures place themselves along it. Control points snake in x/z so the
-// flight banks and turns. Shared by the camera rig and the environments.
+// The descent flight path. High in the clouds → through the Katamari world →
+// down through the front DOORWAY (at a low height, not over the wall) → glide
+// back (−z) through the entry, the hall-of-fame corridor, and into the office
+// behind the seated figure. Scroll 0→1 samples this curve.
 export const PATH = new THREE.CatmullRomCurve3([
-  new THREE.Vector3(0, 5, 13), // L0 surface — high, looking in
-  new THREE.Vector3(3.5, -6, 9), // L1 control — bank right
-  new THREE.Vector3(-4, -17, 10), // L2 data plane — bank left
-  new THREE.Vector3(2.5, -29, 8), // L3 infrastructure
-  new THREE.Vector3(-2, -41, 10), // L4 proving ground
-  new THREE.Vector3(0, -52, 7), // approach
-  new THREE.Vector3(0, -60, 5.5), // L5 core
+  new THREE.Vector3(0, 40, 24), // L0 sky
+  new THREE.Vector3(6, 30, 20), // L1 cloudline
+  new THREE.Vector3(-4, 15, 18), // L2 the yard — house in view
+  new THREE.Vector3(0, 3.6, 9), // drop low, line up with the door
+  new THREE.Vector3(0, 2.8, 3), // L3 through the doorway into the entry
+  new THREE.Vector3(0, 3.2, -4), // L4 hall of fame
+  new THREE.Vector3(0, 2.9, -10), // L5 the office — behind the character
 ]);
 
-export const CORE_Y = -62;
-export const SHAFT_TOP = 8;
-export const SHAFT_BOTTOM = CORE_Y - 2;
+// The closed house. Front wall at +z with the doorway; rooms run back in −z:
+// entry (front→entryToComputer), hall of fame (→computerToOffice), office (→back).
+export const HOUSE = {
+  front: 6,
+  back: -17,
+  halfW: 6,
+  wallH: 3.8,
+  doorW: 3.0,
+  doorH: 3.6,
+  entryToComputer: -1,
+  computerToOffice: -9,
+} as const;
 
-// Scroll offset where each beat's structure sits. The content is six equal
-// viewport-height blocks; with N blocks, block i is centered in the viewport
-// at offset i/(N-1) = i/5. The structures sit at those offsets so text and
-// environment arrive together.
+// Hall-of-fame monitors mount on this wall (−x), facing +x into the hall.
+export const HALL_WALL_X = -HOUSE.halfW + 0.5;
+export const HALL_FROM = -3; // first monitor z
+export const HALL_TO = -8; // last monitor z
+
+// The camera turns to gaze at the hall wall across this scroll window, then turns
+// back to settle on the character.
+export const HALL_GAZE = { from: 0.63, to: 0.92 } as const;
+
+// The camera settles onto this (the seated figure) as it arrives.
+export const FOCUS = new THREE.Vector3(0, 1.5, -14);
+export const GROUND_Y = 0;
+
 export const BEAT = {
   surface: 0,
   control: 1 / 5,
@@ -30,7 +49,18 @@ export const BEAT = {
   core: 1,
 } as const;
 
-// Position on the path at a given scroll offset.
+// The door swings open across this scroll window (as the camera dives in).
+export const DOOR_OPEN = { from: 0.42, to: 0.56 } as const;
+
+// Camera easing: dwell at each beat, quicken between. Zero at every k/5, so the
+// camera still hits each beat point exactly when scroll === k/5.
+const N = 5;
+const A = 0.55;
+export function easeBeat(o: number) {
+  const e = o - (A * Math.sin(2 * Math.PI * N * o)) / (2 * Math.PI * N);
+  return THREE.MathUtils.clamp(e, 0, 1);
+}
+
 export function pointAt(o: number, target = new THREE.Vector3()) {
   return PATH.getPoint(THREE.MathUtils.clamp(o, 0, 1), target);
 }

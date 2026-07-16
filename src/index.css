@@ -1,24 +1,23 @@
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────────────────────────
-   "Descent Into The Machine" — dark-only EVA-undertone system.
-   Near-black void, one crimson emissive accent, cold infra grays,
-   amber reserved for system readouts. Token NAMES are kept from the
-   old Muted Slate theme so existing utilities (bg-bg, text-fg-strong,
+   "Descent from the clouds" — a bright, clear-daytime low-poly world.
+   Pale sky, warm-coral sun accent, dark ink text. Token NAMES are kept
+   from the old theme so existing utilities (bg-bg, text-fg-strong,
    border-brd…) keep resolving — only the values changed.
    ───────────────────────────────────────────────────────────── */
 @theme {
-  --color-bg: #08090c;        /* the void */
-  --color-panel: #0e1117;     /* raised surface */
-  --color-panel-2: #141a24;   /* raised surface, one step up */
-  --color-brd: #232b37;       /* hairline borders */
-  --color-brd-soft: #161c26;  /* softer dividers */
-  --color-fg: #b6bec9;        /* body */
-  --color-fg-strong: #eef2f6; /* headings */
-  --color-fg-dim: #6a7480;    /* muted / captions */
-  --color-accent: #e8102a;    /* EVA crimson — the only saturated color */
-  --color-accent-hi: #ff3347; /* crimson, hover/bright */
-  --color-amber: #ffab30;     /* system readouts only */
+  --color-bg: #eef5f8;        /* pale sky — page bg + docked-panel scrim */
+  --color-panel: #ffffff;     /* raised surface / card */
+  --color-panel-2: #f2f6f9;   /* raised surface, one step up */
+  --color-brd: #d3dde4;       /* hairline borders */
+  --color-brd-soft: #e4ebf0;  /* softer dividers */
+  --color-fg: #3a444e;        /* body ink */
+  --color-fg-strong: #161c22; /* headings */
+  --color-fg-dim: #6b7683;    /* muted / captions */
+  --color-accent: #ee6c4d;    /* warm coral — the one saturated accent */
+  --color-accent-hi: #f2542d; /* coral, hover/bright */
+  --color-amber: #e8a33d;     /* sunny secondary */
 
   --font-display: "Archivo Variable", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -28,7 +27,7 @@
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 5rem; /* offset sticky nav for anchor jumps */
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {

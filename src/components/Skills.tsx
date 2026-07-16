@@ -9,7 +9,7 @@ export function Skills() {
   return (
     <Layer
       meta={meta}
-      title="The control layer"
+      title="What I reach for"
       subtitle="The stack I reach for, grouped by depth — language at the surface, platform below, data underneath."
     >
       <Reveal className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">

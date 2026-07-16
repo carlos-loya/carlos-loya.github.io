@@ -11,7 +11,7 @@ export function Infrastructure() {
   return (
     <Layer
       meta={meta}
-      title="Down to the metal"
+      title="Where I've worked"
       subtitle="Storage durability, observability, CI, and a 60-rack hardware lab. The deeper you go, the earlier the work."
     >
       <div className="relative pl-6 sm:pl-8">
