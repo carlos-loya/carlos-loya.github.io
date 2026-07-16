@@ -1,43 +1,34 @@
 @import "tailwindcss";
 
-/* class-based dark mode (toggled on <html>) */
-@custom-variant dark (&:where(.dark, .dark *));
-
-/* Muted Slate design tokens — light is the default, .dark overrides below.
-   Registered in @theme so utilities like bg-bg / text-fg-strong / border-brd work. */
+/* ─────────────────────────────────────────────────────────────
+   "Descent Into The Machine" — dark-only EVA-undertone system.
+   Near-black void, one crimson emissive accent, cold infra grays,
+   amber reserved for system readouts. Token NAMES are kept from the
+   old Muted Slate theme so existing utilities (bg-bg, text-fg-strong,
+   border-brd…) keep resolving — only the values changed.
+   ───────────────────────────────────────────────────────────── */
 @theme {
-  --color-bg: #fbfcfd;
-  --color-panel: #ffffff;
-  --color-panel-2: #f4f6f8;
-  --color-brd: #e3e7ec;
-  --color-brd-soft: #eef1f4;
-  --color-fg: #3c444e;
-  --color-fg-strong: #14181d;
-  --color-fg-dim: #8a929c;
-  --color-accent: #3d6ea5;
-  --color-accent-hi: #2f5c8f;
+  --color-bg: #08090c;        /* the void */
+  --color-panel: #0e1117;     /* raised surface */
+  --color-panel-2: #141a24;   /* raised surface, one step up */
+  --color-brd: #232b37;       /* hairline borders */
+  --color-brd-soft: #161c26;  /* softer dividers */
+  --color-fg: #b6bec9;        /* body */
+  --color-fg-strong: #eef2f6; /* headings */
+  --color-fg-dim: #6a7480;    /* muted / captions */
+  --color-accent: #e8102a;    /* EVA crimson — the only saturated color */
+  --color-accent-hi: #ff3347; /* crimson, hover/bright */
+  --color-amber: #ffab30;     /* system readouts only */
 
+  --font-display: "Archivo Variable", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono Variable", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-}
-
-/* dark (base identity) */
-.dark {
-  --color-bg: #0e1116;
-  --color-panel: #161b22;
-  --color-panel-2: #1b2129;
-  --color-brd: #232a35;
-  --color-brd-soft: #1a2029;
-  --color-fg: #c9d1d9;
-  --color-fg-strong: #e6edf3;
-  --color-fg-dim: #6e7681;
-  --color-accent: #6b8cbe;
-  --color-accent-hi: #90aed9;
 }
 
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 5rem; /* offset sticky nav for anchor jumps */
+  color-scheme: dark;
 }
 
 body {
@@ -45,6 +36,12 @@ body {
   color: var(--color-fg);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Crimson selection — small identity detail. */
+::selection {
+  background: var(--color-accent);
+  color: #fff;
 }
 
 @media (prefers-reduced-motion: reduce) {

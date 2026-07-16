@@ -1,31 +1,37 @@
 import { FiArrowUpRight } from "react-icons/fi";
-import { Section } from "./Section";
+import { Layer } from "./Layer";
 import { Reveal } from "./Reveal";
 import { sites, type Site } from "../content/projects";
+import { layers } from "../descent";
 
-function SiteCard({ site }: { site: Site }) {
+const meta = layers.find((l) => l.id === "proving-ground")!;
+
+function Portal({ site }: { site: Site }) {
   return (
-    <article className="flex flex-col overflow-hidden rounded-xl border border-brd bg-panel transition-all hover:-translate-y-0.5 hover:border-accent/40">
+    <article className="group flex flex-col overflow-hidden rounded-lg border border-brd bg-panel transition-all hover:-translate-y-0.5 hover:border-accent/50">
       <a
         href={site.url}
         target="_blank"
         rel="noreferrer noopener"
-        className="block aspect-video overflow-hidden border-b border-brd"
+        className="relative block aspect-video overflow-hidden border-b border-brd"
       >
         <img
           src={site.image}
           alt={`Screenshot of ${site.name}`}
           loading="lazy"
-          className="h-full w-full object-cover object-top transition-transform duration-300 hover:scale-[1.03]"
+          className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.04]"
         />
+        <span className="absolute right-3 top-3 rounded border border-accent/50 bg-bg/80 px-2 py-0.5 font-mono text-[10px] tracking-[0.14em] text-accent backdrop-blur-sm">
+          ● LIVE
+        </span>
       </a>
-      <div className="flex flex-1 flex-col gap-3 p-[22px]">
-        <h3 className="text-[16.5px] font-semibold tracking-tight text-fg-strong">
+      <div className="flex flex-1 flex-col gap-3 p-5 sm:p-6">
+        <h3 className="text-[17px] font-semibold tracking-tight text-fg-strong">
           {site.name}
         </h3>
         <p className="text-sm leading-relaxed text-fg">{site.blurb}</p>
         {site.tags && (
-          <div className="flex flex-wrap gap-3 font-mono text-xs text-fg-dim">
+          <div className="flex flex-wrap gap-x-3 gap-y-1 font-mono text-[11px] tracking-[0.1em] text-fg-dim">
             {site.tags.map((tag) => (
               <span key={tag}>{tag}</span>
             ))}
@@ -38,7 +44,7 @@ function SiteCard({ site }: { site: Site }) {
             rel="noreferrer noopener"
             className="inline-flex items-center gap-1 text-accent transition-colors hover:text-accent-hi"
           >
-            Visit <FiArrowUpRight size={14} />
+            Enter <FiArrowUpRight size={14} />
           </a>
           {site.github && (
             <a
@@ -58,17 +64,16 @@ function SiteCard({ site }: { site: Site }) {
 
 export function Projects() {
   return (
-    <Section
-      id="projects"
-      eyebrow="Selected work"
-      title="Sites I've shipped"
-      subtitle="Websites I've designed, built, and deployed."
+    <Layer
+      meta={meta}
+      title="Proving ground"
+      subtitle="Sites I've designed, built, and shipped — running in the wild. Enter any of them."
     >
-      <Reveal className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+      <Reveal className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {sites.map((site) => (
-          <SiteCard key={site.name} site={site} />
+          <Portal key={site.name} site={site} />
         ))}
       </Reveal>
-    </Section>
+    </Layer>
   );
 }
