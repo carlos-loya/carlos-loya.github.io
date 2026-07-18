@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { KineticHeading } from "./KineticHeading";
 import { Reveal } from "./Reveal";
 import type { Layer as LayerMeta } from "../descent";
 
@@ -32,17 +33,20 @@ export function Layer({
             </span>
           </div>
           <div className="mt-3 h-px w-full bg-gradient-to-r from-accent/50 via-brd to-transparent" />
-          {title && (
-            <h2 className="mt-6 font-display text-3xl font-black uppercase leading-[0.95] tracking-tight text-fg-strong sm:text-5xl">
-              {title}
-            </h2>
-          )}
-          {subtitle && (
+        </Reveal>
+        {/* Title sits outside the Reveal fade so the char rise isn't muddied. */}
+        {title && (
+          <KineticHeading className="mt-6 font-display text-3xl uppercase leading-[0.95] tracking-[-0.04em] text-fg-strong sm:text-5xl">
+            {title}
+          </KineticHeading>
+        )}
+        {subtitle && (
+          <Reveal>
             <p className="mt-4 max-w-[58ch] text-[15px] leading-relaxed text-fg-dim">
               {subtitle}
             </p>
-          )}
-        </Reveal>
+          </Reveal>
+        )}
         <div className={title || subtitle ? "mt-12" : ""}>{children}</div>
       </div>
     </Tag>

@@ -74,23 +74,47 @@ interface PlaceProps {
   scale?: number;
 }
 
-// A soft blobby cloud — a clump of flat-shaded spheres.
-export function Cloud({ position, scale = 1 }: PlaceProps) {
-  const blobs = useMemo<{ p: Vec3; r: number }[]>(
-    () => [
-      { p: [0, 0, 0], r: 1 },
-      { p: [1.1, -0.15, 0.2], r: 0.75 },
-      { p: [-1.05, -0.1, -0.15], r: 0.8 },
-      { p: [0.4, 0.35, -0.3], r: 0.65 },
-      { p: [-0.5, 0.3, 0.35], r: 0.6 },
-    ],
-    [],
-  );
+// A small deterministic PRNG so seeded cloud placement is stable across reloads.
+function mulberry32(seed: number) {
+  let a = seed;
+  return function () {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// A chunky, toy-like low-poly cloud: a seeded clump of intersecting flat-shaded
+// primitives (low-detail icospheres for faceted bubbles, plus a few cubes) at
+// varying scales — bubble-gum clusters, not smooth realistic clouds. The cool
+// hemisphere ambient gives the shadowed facets their lavender/blue tint for free;
+// no shadows (sky decoration, kept cheap). Wider than tall, like a real cloud.
+export function CloudCluster({ position, scale = 1, seed = 1 }: PlaceProps & { seed?: number }) {
+  const blobs = useMemo(() => {
+    const rng = mulberry32(seed * 2654435761);
+    const out: { p: Vec3; r: number; cube: boolean; rot: number }[] = [];
+    const n = 9 + Math.floor(rng() * 6); // 9–14 lumps
+    // core lump
+    out.push({ p: [0, 0, 0], r: 1, cube: false, rot: 0 });
+    for (let i = 0; i < n; i++) {
+      const t = rng() * Math.PI * 2;
+      const rad = 0.5 + rng() * 1.5;
+      out.push({
+        p: [Math.cos(t) * rad, (rng() - 0.5) * 0.7, Math.sin(t) * rad * 0.6],
+        r: 0.45 + rng() * 0.7,
+        cube: rng() < 0.28, // a few cubes for chunk variety
+        rot: rng() * Math.PI,
+      });
+    }
+    return out;
+  }, [seed]);
   return (
     <group position={position} scale={scale}>
       {blobs.map((b, i) => (
-        <mesh key={i} position={b.p} material={mat(PAL.cloud, { rough: 1 })}>
-          <icosahedronGeometry args={[b.r, 1]} />
+        <mesh key={i} position={b.p} rotation={[b.rot, b.rot * 1.3, 0]} material={mat(PAL.cloud, { rough: 1 })}>
+          {b.cube ? <boxGeometry args={[b.r * 1.4, b.r * 1.4, b.r * 1.4]} /> : <icosahedronGeometry args={[b.r, 0]} />}
         </mesh>
       ))}
     </group>
@@ -200,6 +224,61 @@ export function Building({ position, rotation, scale = 1 }: PlaceProps) {
   );
 }
 
+// A retro low-poly delivery step-van, parked on the driveway. Cream cab + a
+// rounded coral cargo body, chunky dark wheels, a little chrome bumper. Purely
+// procedural + flat-shaded; swap for a CC0 glTF later. Faces +z (toward the road).
+export function RetroTruck({ position, rotation, scale = 1 }: PlaceProps) {
+  const body = "#e07a5f"; // coral cargo body
+  const cab = "#f3ead6"; // cream cab
+  const tyre = "#2c2f35";
+  const wheels: Vec3[] = [
+    [-0.95, 0.42, 1.15],
+    [0.95, 0.42, 1.15],
+    [-0.95, 0.42, -1.05],
+    [0.95, 0.42, -1.05],
+  ];
+  return (
+    <group position={position} rotation={rotation} scale={scale}>
+      {/* cargo box (rear) */}
+      <mesh position={[0, 1.3, -0.7]} material={mat(body)} castShadow receiveShadow>
+        <boxGeometry args={[2.1, 1.9, 2.4]} />
+      </mesh>
+      {/* slightly rounded roof cap */}
+      <mesh position={[0, 2.32, -0.7]} material={mat(body)} castShadow>
+        <boxGeometry args={[2.0, 0.24, 2.3]} />
+      </mesh>
+      {/* cab (front) */}
+      <mesh position={[0, 1.0, 1.15]} material={mat(cab)} castShadow receiveShadow>
+        <boxGeometry args={[2.0, 1.3, 1.3]} />
+      </mesh>
+      {/* windshield + side windows */}
+      <mesh position={[0, 1.35, 1.81]} material={mat(PAL.window)}>
+        <boxGeometry args={[1.7, 0.7, 0.05]} />
+      </mesh>
+      {[-1.01, 1.01].map((x) => (
+        <mesh key={x} position={[x, 1.35, 1.15]} material={mat(PAL.window)}>
+          <boxGeometry args={[0.05, 0.6, 0.9]} />
+        </mesh>
+      ))}
+      {/* bumper + headlight */}
+      <mesh position={[0, 0.55, 1.85]} material={mat(PAL.metal)}>
+        <boxGeometry args={[2.0, 0.22, 0.16]} />
+      </mesh>
+      {[-0.7, 0.7].map((x) => (
+        <mesh key={x} position={[x, 0.85, 1.83]} material={mat("#fff3b0")}>
+          <sphereGeometry args={[0.12, 8, 8]} />
+        </mesh>
+      ))}
+      {/* wheels */}
+      {wheels.map((p, i) => (
+        <mesh key={i} position={p} rotation={[0, 0, Math.PI / 2]} material={mat(tyre)} castShadow>
+          <cylinderGeometry args={[0.42, 0.42, 0.3, 12]} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
 // A floating chunk of land: grassy top, dirt underside — the little worlds
 // the descent passes. Cylinder disc with a tapered dirt base.
 export function Island({ position, scale = 1, r = 4 }: PlaceProps & { r?: number }) {
@@ -211,6 +290,28 @@ export function Island({ position, scale = 1, r = 4 }: PlaceProps & { r?: number
       <mesh position={[0, -1.3, 0]} material={mat(PAL.dirt)} castShadow>
         <coneGeometry args={[r * 0.92, 2.4, 12]} />
       </mesh>
+    </group>
+  );
+}
+
+// A little low-poly flower: green stem, icosahedron pistil, a ring of petals.
+// Placed in clumps along the planet road; pops into existence as the road crests
+// (see RoadFlowers in Road.tsx). Petal colour is the only variant.
+const PETAL_ANGLES = [0, 1, 2, 3, 4].map((i) => (i / 5) * Math.PI * 2);
+export function Flower({ position, scale = 1, color = PAL.balloon }: PlaceProps & { color?: string }) {
+  return (
+    <group position={position} scale={scale}>
+      <mesh position={[0, 0.25, 0]} material={mat(PAL.leaf)}>
+        <cylinderGeometry args={[0.035, 0.05, 0.5, 5]} />
+      </mesh>
+      <mesh position={[0, 0.55, 0]} material={mat("#f6d34a")}>
+        <icosahedronGeometry args={[0.09, 0]} />
+      </mesh>
+      {PETAL_ANGLES.map((a, i) => (
+        <mesh key={i} position={[Math.cos(a) * 0.15, 0.55, Math.sin(a) * 0.15]} material={mat(color, { rough: 0.7 })}>
+          <sphereGeometry args={[0.1, 6, 6]} />
+        </mesh>
+      ))}
     </group>
   );
 }

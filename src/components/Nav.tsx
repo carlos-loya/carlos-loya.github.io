@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { FiMenu, FiX } from "react-icons/fi";
 import { profile } from "../content/profile";
-import { layers } from "../descent";
+import { navLayers as sectionLayers } from "../descent";
 
-// Skip the surface layer in the nav — you're already there on load.
-const navLayers = layers.filter((l) => l.id !== "top");
+// Skip the surface layer in the nav — you're already there on load. (navLayers
+// from descent already drops cinematic-only travel beats like the road.)
+const navLayers = sectionLayers.filter((l) => l.id !== "top");
 
 export function Nav() {
   const [open, setOpen] = useState(false);

@@ -28,7 +28,7 @@ export function Character({
     const box = new THREE.Box3().setFromObject(scene);
     const size = new THREE.Vector3();
     box.getSize(size);
-    const scale = 1.9 / (size.y || 1); // ~1.9 tall (bind pose); reads right when seated
+    const scale = 2.3 / (size.y || 1); // scaled up to fill the office chair when seated
     return { s: scale, offY: -box.min.y * scale };
   }, [scene]);
 

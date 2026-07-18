@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, useScroll, useSpring, useMotionValueEvent } from "framer-motion";
-import { layers, MAX_DEPTH } from "../descent";
+import { layers, navLayers, MAX_DEPTH } from "../descent";
 
 // Fixed left-rail depth gauge — the signature element that ties the DOM
 // journey to the WebGL descent. Shows a filling vertical bar, a live depth
@@ -26,7 +26,7 @@ export function DescentHud() {
       },
       { rootMargin: "-45% 0px -45% 0px" },
     );
-    for (const l of layers) {
+    for (const l of navLayers) {
       const el = document.getElementById(l.id);
       if (el) obs.observe(el);
     }
@@ -56,7 +56,7 @@ export function DescentHud() {
             </div>
           </div>
           <ul className="space-y-2">
-            {layers.map((l) => {
+            {navLayers.map((l) => {
               const on = l.id === active;
               return (
                 <li

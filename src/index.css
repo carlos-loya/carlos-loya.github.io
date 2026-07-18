@@ -19,9 +19,9 @@
   --color-accent-hi: #f2542d; /* coral, hover/bright */
   --color-amber: #e8a33d;     /* sunny secondary */
 
-  --font-display: "Archivo Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-mono: "JetBrains Mono Variable", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-display: "Rubik Mono One", "Space Mono", ui-monospace, monospace;
+  --font-sans: "Space Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-mono: "Space Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 
 html {
@@ -35,6 +35,11 @@ body {
   color: var(--color-fg);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Stable char metrics for SplitText headings (kerning shifts move chars mid-split). */
+h1, h2 {
+  font-kerning: none;
 }
 
 /* Crimson selection — small identity detail. */

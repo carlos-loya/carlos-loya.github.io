@@ -3,6 +3,8 @@ import { Reveal } from "./Reveal";
 import { experience } from "../content/experience";
 import { layers } from "../descent";
 
+// The independent-work "systems shipped" showcase sits at L2 THE WORKSHOP
+// (skills moved up to the L1 garden); the shared nav stays consistent.
 const meta = layers.find((l) => l.id === "data-plane")!;
 // The independent-work role is the systems showcase — show, don't tell.
 const role = experience[0];

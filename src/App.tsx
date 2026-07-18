@@ -17,6 +17,8 @@ function StaticSite() {
       <DescentHud />
       <main>
         <Hero />
+        {/* L1 the garden (skills), then L2 the workshop (systems) — mirrors the
+            cinematic beat order (the L3 road is a cinematic-only travel beat) */}
         <Skills />
         <DataPlane />
         <Infrastructure />

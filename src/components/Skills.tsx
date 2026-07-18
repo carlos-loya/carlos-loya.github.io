@@ -3,6 +3,8 @@ import { Reveal } from "./Reveal";
 import { skillGroups } from "../content/skills";
 import { layers } from "../descent";
 
+// Skills live at L1 THE GARDEN (the cinematic "toolkit garden"); the static
+// site mirrors that mapping so the shared nav labels stay consistent.
 const meta = layers.find((l) => l.id === "control")!;
 
 export function Skills() {

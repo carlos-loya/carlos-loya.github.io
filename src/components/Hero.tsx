@@ -1,4 +1,5 @@
 import { profile } from "../content/profile";
+import { KineticHeading } from "./KineticHeading";
 import LogoLoop, { type LogoItem } from "./LogoLoop";
 import { techLogos } from "../content/skills";
 
@@ -48,9 +49,12 @@ export function Hero() {
         <p className="mt-8 font-mono text-xs uppercase tracking-[0.18em] text-fg-dim">
           {profile.eyebrow}
         </p>
-        <h1 className="mt-5 max-w-[20ch] font-display text-[2.6rem] font-black leading-[0.98] tracking-tight text-fg-strong text-balance sm:text-6xl md:text-7xl">
+        <KineticHeading
+          as="h1"
+          className="mt-5 max-w-[20ch] font-display text-[2.6rem] leading-[0.98] tracking-[-0.04em] text-fg-strong sm:text-6xl md:text-7xl"
+        >
           <Headline />
-        </h1>
+        </KineticHeading>
         <p className="mt-7 max-w-[58ch] text-base leading-relaxed text-fg sm:text-lg">
           {profile.lede}
         </p>

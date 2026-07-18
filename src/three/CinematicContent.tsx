@@ -7,6 +7,7 @@ import { experience } from "../content/experience";
 import { sites } from "../content/projects";
 import { layers } from "../descent";
 import type { Layer as LayerMeta } from "../descent";
+import { KineticHeading } from "../components/KineticHeading";
 
 // Cinematic presentation: one lean, docked panel per beat, timed to the
 // camera arriving at that structure. Deliberately more compact than the
@@ -69,9 +70,9 @@ export function CinematicContent() {
         <p className="font-mono text-xs uppercase tracking-[0.18em] text-fg-dim">
           {profile.eyebrow}
         </p>
-        <h1 className="mt-4 font-display text-[2.4rem] font-black uppercase leading-[0.95] tracking-tight text-fg-strong sm:text-6xl">
+        <KineticHeading as="h1" className="mt-4 font-display text-[2.4rem] uppercase leading-[0.95] tracking-[-0.04em] text-fg-strong sm:text-6xl">
           <Headline />
-        </h1>
+        </KineticHeading>
         <p className="mt-6 max-w-[46ch] text-[15px] leading-relaxed text-fg sm:text-base">
           {profile.lede}
         </p>
@@ -86,12 +87,14 @@ export function CinematicContent() {
         <p className="mt-10 font-mono text-[11px] tracking-[0.3em] text-fg-dim/60">↓ SCROLL TO DESCEND</p>
       </Beat>
 
-      {/* L1 · CONTROL */}
+      {/* L1 · THE GARDEN — the tech-toolkit garden: the stack, alive (far side of the planet) */}
       <Beat layer={byId("control")}>
-        <h2 className="font-display text-3xl font-black uppercase tracking-tight text-fg-strong sm:text-4xl">
-          What I reach for
-        </h2>
-        <p className="mt-3 text-sm text-fg-dim">The stack I build with.</p>
+        <KineticHeading className="font-display text-3xl uppercase tracking-[-0.04em] text-fg-strong sm:text-4xl">
+          The toolkit garden
+        </KineticHeading>
+        <p className="mt-3 text-sm text-fg-dim">
+          The stack I build with — <span className="text-accent">hover a critter</span> to meet it.
+        </p>
         <dl className="mt-6 space-y-4">
           {skillGroups.map((g) => (
             <div key={g.title}>
@@ -102,11 +105,11 @@ export function CinematicContent() {
         </dl>
       </Beat>
 
-      {/* L2 · DATA_PLANE */}
+      {/* L2 · THE WORKSHOP — systems shipped, manifested as mechanical rigs in the shed */}
       <Beat layer={byId("data-plane")}>
-        <h2 className="font-display text-3xl font-black uppercase tracking-tight text-fg-strong sm:text-4xl">
+        <KineticHeading className="font-display text-3xl uppercase tracking-[-0.04em] text-fg-strong sm:text-4xl">
           Systems I've shipped
-        </h2>
+        </KineticHeading>
         <p className="mt-3 max-w-[44ch] text-sm text-fg-dim">{experience[0].summary}</p>
         <ol className="mt-6 space-y-4">
           {experience[0].points.map((pt, i) => (
@@ -120,11 +123,19 @@ export function CinematicContent() {
         </ol>
       </Beat>
 
-      {/* L3 · INFRASTRUCTURE */}
+      {/* L3 · THE ROAD — a travel beat: the planet spins toward the house, flowers
+          popping up along the road. Caption only, no docked panel or scrim. */}
+      <section className="pointer-events-none flex min-h-screen items-end justify-center pb-16">
+        <p className="font-mono text-[11px] tracking-[0.3em] text-fg-dim/70">
+          EN ROUTE — AROUND THE WORLD ↓
+        </p>
+      </section>
+
+      {/* L4 · THE DRIVEWAY */}
       <Beat layer={byId("infrastructure")}>
-        <h2 className="font-display text-3xl font-black uppercase tracking-tight text-fg-strong sm:text-4xl">
+        <KineticHeading className="font-display text-3xl uppercase tracking-[-0.04em] text-fg-strong sm:text-4xl">
           Where I've worked
-        </h2>
+        </KineticHeading>
         <ul className="mt-6 space-y-5">
           {experience.slice(1).map((r) => (
             <li key={r.when}>
@@ -138,13 +149,13 @@ export function CinematicContent() {
         </ul>
       </Beat>
 
-      {/* L4 · PROVING_GROUND */}
+      {/* L5 · THE GALLERY */}
       <Beat layer={byId("proving-ground")}>
-        <h2 className="font-display text-3xl font-black uppercase tracking-tight text-fg-strong sm:text-4xl">
-          Hall of fame
-        </h2>
+        <KineticHeading className="font-display text-3xl uppercase tracking-[-0.04em] text-fg-strong sm:text-4xl">
+          The gallery
+        </KineticHeading>
         <p className="mt-3 text-sm text-fg-dim">
-          Shipped and running in the wild — <span className="text-accent">click a screen</span> to open it.
+          Shipped and running in the wild — <span className="text-accent">click a frame</span> to open it.
         </p>
         <ul className="mt-6 space-y-5">
           {sites.map((s) => (
@@ -169,11 +180,11 @@ export function CinematicContent() {
         </ul>
       </Beat>
 
-      {/* L5 · CORE */}
+      {/* L6 · THE DESK */}
       <Beat layer={byId("core")}>
-        <h2 className="font-display text-3xl font-black uppercase tracking-tight text-fg-strong sm:text-5xl">
+        <KineticHeading className="font-display text-3xl uppercase tracking-[-0.04em] text-fg-strong sm:text-5xl">
           You've reached the desk
-        </h2>
+        </KineticHeading>
         <p className="mt-4 max-w-[46ch] text-[15px] leading-relaxed text-fg-dim">
           Open to full-stack and backend roles, and to interesting builds. Email is the fastest way in.
         </p>
