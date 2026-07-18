@@ -6,149 +6,105 @@ Guidance for Claude instances working in this repo.
 
 Carlos Loya's personal portfolio — `carlos-loya.github.io`. Deployed to GitHub
 Pages via `.github/workflows/deploy.yml` on push to `main`. Stack: React 19 +
-Vite + Tailwind v4 (`@theme` tokens, no config file) + framer-motion +
-react-three-fiber.
+Vite + Tailwind v4 (`@theme` tokens, no config file) + **GSAP** (ScrollTrigger,
+SplitText). No WebGL, no three.js — see history below.
 
-## The concept: "Descent from the clouds"
+## The concept: "Color Worlds"
 
-The site is **one immersive vertical WebGL journey**, not a stack of resume
-sections. Scrolling flies a camera down out of the clouds onto a small **static
-planet** (R=75) — a charming *Katamari Damacy* main-menu miniature — and the
-**camera orbits it**, riding a dirt road that wraps **~half the sphere** (~166°),
-with the horizon rolling as it travels: the **toolkit garden** at the trailhead
-(the stack, as tech-pet mascots), the **workshop shed** (systems, as mechanical
-rigs) on the opposite side of the road, then the long **road** leg (flowers pop
-in as you travel) to the **house** at the sphere's apex — its **driveway** a
-concrete strip with a retro truck + cardboard work-experience boxes, then
-**through the front door** into the **gallery** (framed live sites), ending at
-the **desk** where Carlos sits (back to camera) with a coffee cup. The house pad
-(tilt 0) lands at the interior's original world coordinates, so the
-door/gallery/desk framing is authored in plain world space.
+The site is **one vertical scroll story through six saturated "color worlds,"**
+each world a chapter of the résumé, carried by **kinetic typography**. As you
+scroll, the full-viewport background **blends between world hues**; one section
+(Work) **pins and turns horizontal** before releasing back to vertical. It's an
+Awwwards Site-of-the-Day bid: creative, unique, and **highly performant**.
 
 Design direction (locked with Carlos — keep to it):
 - **"Show, don't tell."** Demonstrate capability; don't recite a resume.
-- **Vibrant, toy-like low-poly.** A saturated **cyan-blue → pastel-peach** sky
-  gradient (canvas `Skydome` in `src/three/Sky.tsx`), warm upper-left sun +
-  **cool lavender/blue hemisphere** so flat-shaded facets pop (cool in shadow,
-  warm in light), ONE warm-coral accent (`--color-accent` `#ee6c4d`). Charming and
-  friendly. *(This global re-theme superseded the original "bright clear-daytime"
-  pass — one lighting/fog setup across all beats. `fogExp2` hides the far
-  planet from the hero, then parts as the camera descends.)*
-- **Real CC0/CC-BY glTF models** now carry the props (see `public/attribution.md`
-  + the "3D credits" footer link — CC-BY needs the visible credit). Loaded via
-  `useGLTF` in `src/three/models.tsx`, auto-normalized by bounding box.
-- **Performance-first.** No postprocessing, no shaders, no raymarching — models +
-  real (cheap) lighting. It must stay smooth.
-- **Audience is employers, clients, AND peers** — spectacle must not cost
-  legibility. The facts stay extractable.
+- **Katamari Damacy = aesthetic, not mechanic.** Keep the hyper-saturated,
+  whimsical, toy-like *vibe* and color. There is **no rolling/physics gimmick**.
+- **Kinetic typography is the signature.** The type is the art — oversized Rubik
+  Mono One that splits/rises out of masks on entry (`KineticHeading`). Color and
+  motion do the heavy lifting; imagery is minimal.
+- **Per-world color.** Each act owns a bold hue; the background scrubs between
+  them on scroll (cyan → lime → gold → coral → pink → violet). Type ink flips per
+  world to stay legible.
+- **Performance-first, zero WebGL.** Pure DOM + SVG/CSS + GSAP — GPU-cheap
+  transforms only. No postprocessing, no shaders, no canvas 3D. It must stay 60fps
+  and the résumé facts must stay legible/extractable.
+- **A light toy garnish** (`ToyField`) scatters code-drawn saturated shapes
+  behind each act — accent, not illustration. It must never upstage the type.
 
-The seven beats (source of truth: `src/descent.ts`). The `road` beat is a
-cinematic-only travel beat (`transit: true`) with no static DOM section:
+The six acts (source of truth: `src/scroll/worlds.ts`; array order == scroll
+order). Content comes from `src/content/*` — never fork the data:
 
-| Code | id | Scene | Content |
+| id | World hue | Scene | Content |
 |---|---|---|---|
-| L0 SKY | `top` | High in the clouds | Hero (`profile.ts`) |
-| L1 THE GARDEN | `control` | Toolkit garden at the trailhead | Skills (`skills.ts`), tech pets |
-| L2 THE WORKSHOP | `data-plane` | Rustic shed of mechanical rigs | Independent systems — `experience[0]` |
-| L3 THE ROAD | `road` | Camera rides the road toward the house; flowers pop in | *(travel only — no panel)* |
-| L4 THE DRIVEWAY | `infrastructure` | Retro truck + cardboard job-era boxes | Employed roles — `experience.slice(1)` |
-| L5 THE GALLERY | `proving-ground` | Framed live-site screenshots on the wall | Live sites (`projects.ts`) |
-| L6 THE DESK | `core` | Carlos seated (Man model), back to camera, coffee | Contact |
+| `top` | cyan | Hero | `profile.ts` |
+| `toolkit` | lime | What I reach for | `skills.ts` (`skillGroups`, `techLogos` LogoLoop) |
+| `systems` | gold | Systems I've shipped | `experience[0]` (independent work) |
+| `experience` | coral | Where I've worked | `experience.slice(1)` (employed roles) |
+| `work` | pink | Live in the wild | `projects.ts` — **horizontal pinned gallery** |
+| `contact` | violet | Let's build something | `profile` contact fields (footer) |
 
 ## Architecture (important)
 
-**Two presentations of the same data, chosen at runtime in `App.tsx` via
-`useEnable3D()`:**
+**One presentation** — no runtime 3D-vs-static branch (that's gone). A stack of
+`.act` sections + one fixed animated background layer.
 
-1. **Cinematic descent (capable desktops)** — a full-viewport WebGL flight. Files
-   in `src/three/`:
-   - `DescentCanvas.tsx` → exports `CinematicDescent`: the `<Canvas>` with drei
-     `<ScrollControls pages={7} damping>` (its damping is the momentum — no
-     Lenis/GSAP). Contains the 3D `Scene` and the content in `<Scroll html>`.
-   - `path.ts` — the **orbit rig**: `PLANET` sphere (R=75, center `(0,-75,-6)` so
-     the apex is at world `(0,0,-6)`), `PAD_A` tilt angles per beat (house 0,
-     workshop 1.5, garden 2.9), `orbitAngle(o)` (piecewise-linear scroll→tilt,
-     monotonic garden→0, keyframed to `BEAT`), `camOrbit` (chase camera: `H_UP`
-     above the road + `BACK` up-road + mid-leg lift), `roadPoint`/`roadsidePoint`/
-     `shotPoint` (single source for BOTH content placement and camera gaze), the
-     composed beat shots (`GARDEN_SHOT`/`SHED_SHOT` + gaze windows), and the
-     world-space `INTERIOR` CatmullRom for the house flight. Content is **seven
-     equal 100vh blocks**, so block *i* centers at offset **i/6** — `BEAT` values
-     must match, or structures and text drift apart. `orbitAngle` reaches rest
-     (0) at `ARRIVE` (4/6), before `DOOR_OPEN`, so the interior lands at its
-     authored world coords. `path.test.ts` (run `node src/three/path.test.ts`)
-     asserts these invariants — keep it passing.
-   - `DescentCanvas.tsx` also holds `CameraRig` (orbit + sky-in slerp + gaze/shot
-     envelopes + **camera roll**: `camera.up` follows the orbit tilt so the far
-     side of the planet renders right-side-up) and `SkyRig` (sun + hemisphere +
-     skydome rotate about the planet center with the camera's tilt, so every
-     beat is lit/shadowed like the house at rest and the sky gradient stays
-     upright; identity at the hero and from arrival on).
-   - `structures.tsx` — exports `World`: world-space sky scenery (clouds, island)
-     plus the static `Planet`. `Planet` holds the house `Pad` (tilt 0) and two
-     `Roadside` placements (garden/workshop, `±GARDEN_DX/SHED_DX` off the road).
-     The `Pad`'s inner `[0, R, 6]` offset cancels `PLANET.center`, so **house-pad
-     children (the whole interior: `HouseShell`, `Door`, `Foyer`, `Gallery`,
-     `Office`, and the interior point lights) use plain world coords** for any R.
-     Don't hardcode a pad's world position — place content pad-local and let
-     `Pad`/`Roadside` orient it (they mirror `roadsidePoint`).
-   - `models.tsx` — `useGLTF` wrappers (`ModelTree/Desk/Chair/Computer/`
-     `Plant/Pot/Cup/Greenhouse`) that clone + **auto-normalize each glTF by
-     bounding box** (glTF exports arrive at wildly different scales) +
-     `useGLTF.preload`.
-   - `props.tsx` — remaining procedural bits (`House`, `Island`, `Slab`, `Rug`,
-     `Window` helpers) + the flat-shaded `mat()` cache and `PAL` palette.
-   - `Character.tsx` — the seated **Man** glТF playing its `Man_Sitting` clip
-     (`useAnimations`), auto-normalized. Swappable rig.
-   - `HallDisplay.tsx` — a gallery picture frame: `ModelPictureFrame` + a
-     screenshot plane (`useTexture`) + a drei `<Text>` nameplate; `onClick`
-     opens the site, hover lifts it off the wall.
-   - `Garden.tsx` — the L1 toolkit garden: greenhouse + tech-pet mascots with a
-     hover squash-and-stretch + `SpeechBubble` (the `Pet` wrapper is the reusable
-     hover interaction).
-   - `CinematicContent.tsx` — the lean docked text panels (one `<Beat>` per layer),
-     over a left→right light scrim for legibility. More compact than the static
-     site by design; full detail lives in the static site + résumé.
-2. **Static site (mobile / reduced-motion / fallback)** — the original stacked
-   `<Layer>` sections (`Hero`, `Skills`, `DataPlane`, `Infrastructure`, `Projects`,
-   `Contact`) + the `DescentHud` gauge. Fully accessible and SEO-visible, stands on
-   its own. This is also the `<Suspense>` fallback while the 3D chunk loads.
-
-**The 3D is gated and lazy.** `useEnable3D()` returns true only on capable desktops
-(`min-width:768px`, no `prefers-reduced-motion`, WebGL present). `CinematicDescent`
-is a `React.lazy` chunk, so the static branch never downloads three.js. **Preserve
-this gate and the static fallback** — it's how accessibility, mobile, and
-legibility are satisfied. Content for both comes from `src/content/*.ts`; never
-fork the data.
+- **`src/scroll/worlds.ts`** — the single source of truth (replaced the old
+  `descent.ts`). `WORLDS: World[]` (`id`/`nav`/`bg`/`fg`/`accent`), `world(id)`,
+  `worldStyle(w)` (the inline `--world-*` vars an act applies), `navWorlds`.
+  Both `Nav` and every act read from here so labels/anchors/colors never drift.
+- **`src/scroll/ColorWorlds.tsx`** — the animated background. A single fixed
+  `.worlds-bg` layer; one `ScrollTrigger` `onUpdate` blends its color between the
+  two acts straddling the viewport center (`gsap.utils.interpolate` over the
+  world `bg` values). Sets `html[data-worlds="motion"]`. **Under reduced motion
+  it does nothing** — then each `.act` paints its own solid world background (the
+  `.act` CSS rule), giving a static, fully-legible multi-color page with no JS.
+- **`src/index.css`** — the color system. `@theme` color tokens are defined as
+  `var(--world-*, <cyan fallback>)`, so every Tailwind color utility (`text-fg`,
+  `bg-panel`, `border-brd`, `text-accent`) **resolves per-world automatically** —
+  each `.act` just sets `--world-bg/fg/accent` and the whole subtree recolors, no
+  per-component color code. Cards are glassy translucent-white panels. Font
+  tokens (`--font-display` Rubik Mono One, `--font-sans`/`--font-mono` Space
+  Mono) are unchanged. `@keyframes toyfloat` drives the garnish drift.
+- **`src/components/Act.tsx`** — the world-aware section wrapper (replaced the
+  old depth-HUD `Layer`). Applies `worldStyle`, scatters `ToyField`, and renders
+  the kinetic header (eyebrow · big display title · subtitle) over the content.
+  Most acts are `<Act world={world("…")} …>`.
+- **`src/components/Projects.tsx`** — the horizontal interlude. A pinned GSAP
+  timeline (`useGSAP` + ScrollTrigger `pin` + `scrub`) translates a flex track
+  sideways; panels are **viewport-relative widths (`44vw`)** so the strip always
+  overflows and there's real distance to scroll (fixed px widths once summed to
+  *less* than a wide viewport and the section died — don't reintroduce that). A
+  `distance <= 0` guard degrades gracefully, and reduced motion renders a plain
+  vertical grid.
+- **`src/components/ToyField.tsx`** — tier-1 code-drawn Katamari "stuff"
+  (ring/blob/star/capsule/dot/cross SVGs) on a slow CSS float; skipped under
+  reduced motion. **Tier-2** (recolored CC0 flat-object SVGs in `public/toys/`,
+  credited in `public/attribution.md`) is planned asset work — drop them in here.
+- **Kept machinery:** `KineticHeading` (GSAP SplitText, self-triggers via
+  `useInView`, reverts to clean markup, reduced-motion-safe), `Reveal`,
+  `useInView`, `LogoLoop`. Reuse them; don't reinvent.
 
 ## Conventions
 
 - **Content lives in `src/content/*.ts`** (`profile`, `skills`, `experience`,
   `projects`). Edit data there; components read from it. Don't hardcode copy in
-  components, and don't fabricate content — mapping to layers must stay truthful.
-- **Design tokens** are in `src/index.css` under `@theme`. Token *names* are kept
-  from the old theme (`bg`, `panel`, `brd`, `fg`, `fg-strong`, `accent`…) so
-  Tailwind utilities like `bg-bg` / `text-fg-strong` resolve — but the *values*
-  are now clear-daytime (light bg, dark ink, warm-coral accent). `color-scheme:
-  light`. Flipping token values re-themes the static site and the docked panels
-  together. Fonts: `font-display` = Rubik Mono One (headlines, all-caps,
-  `tracking-[-0.04em]`), `font-sans` + `font-mono` = Space Mono (body +
-  labels/readouts).
-- **Kinetic headings**: primary headers render through
-  `components/KineticHeading.tsx` — GSAP SplitText chars rise out of per-char
-  masks on first view (`back.out(1.7)`, tight stagger), then the split reverts
-  to clean markup. It self-triggers via `useInView` (works inside drei
-  `<Scroll html>` too) and renders a plain, always-visible tag under
-  reduced motion.
-- **Reveals**: wrap scroll-in animations in `<Reveal>` (`components/Reveal.tsx`);
-  it and `useInView` already no-op under reduced-motion. Reuse them.
-- Keep new 3D scene code in `src/three/`. Props are CC0/CC-BY glТF via `useGLTF`
-  (`models.tsx`, drop `.glb` in `public/models/`, add the credit to
-  `public/attribution.md`) with a few flat-shaded primitives (`props.tsx`). Lit by
-  a hemisphere + one shadow-casting sun + a few interior point lights (the closed
-  roof shadows out the sun indoors), light-blue fog. **No postprocessing, no
-  custom shaders, no raymarching** (an earlier bloom/raymarch pass killed
-  performance; don't reintroduce it).
+  components, and don't fabricate content — the mapping to acts must stay truthful.
+- **New scroll/world logic goes in `src/scroll/`.** Add or reorder acts by
+  editing `WORLDS` (+ a matching `<Act>` in `App.tsx`); the nav and color driver
+  follow automatically.
+- **Design tokens** are in `src/index.css` under `@theme`, wired to `--world-*`
+  vars. To recolor a world, edit `WORLDS`, not the components. `color-scheme:
+  light`.
+- **Kinetic headings** render through `KineticHeading` (GSAP SplitText char-rise
+  on first view; plain always-visible tag under reduced motion). **Reveals** wrap
+  scroll-in fades via `<Reveal>`. Both already no-op under reduced motion — reuse
+  them rather than writing new scroll animation.
+- **Accessibility is not optional.** Every motion path (color scrub, pin, split,
+  toy drift) must have a reduced-motion fallback that leaves the content static
+  and legible. There is no separate DOM tree — the same markup must read well
+  with JS/animation off.
 
 ## Commands
 
@@ -159,27 +115,25 @@ fork the data.
 ## Verifying changes
 
 Drive it, don't just typecheck. `npm run dev`, then in a browser: scroll the full
-descent SKY→THE DESK and confirm each beat is framed + the orbit/roll reads
-right + the gallery frames show screenshots and click through; check a narrow
-viewport and reduced-motion both fall back to the static DOM with content intact.
-Run `node src/three/path.test.ts` after touching the rig constants.
-(Carlos owns the visual pass — don't run Playwright for it.)
+story top→bottom and confirm the background **blends** cyan→lime→gold→coral→
+pink→violet, each act's **kinetic heading** fires on entry, and the **Work**
+section **pins, scrolls sideways, and releases**; type stays legible in every
+world. Toggle OS reduced-motion (and a narrow viewport) and confirm the page
+falls back to static, fully-legible multi-color sections with content intact.
+(Carlos owns the visual/taste pass — don't burn tokens looping on Playwright
+screenshots for aesthetics; a quick functional check when debugging a broken
+interaction is fine.)
 
-## Status / next
+## History / status
 
-**In progress: the half-planet overhaul** (after GitHub issues #1–#4). The orbit
-rig, camera roll, `SkyRig`, half-planet road + flower pop-ins, composed L1/L2
-shots, grounded house (no terrace coin), concrete driveway, and the seated-office
-arrangement are all built. What remains is **visual tuning of the knobs** —
-`PAD_A`, `GARDEN_SHOT`/`SHED_SHOT`, `H_UP`/`BACK`/lift, `GARDEN_DX`/`SHED_DX`,
-the `GardenPad`/`WorkshopPad` recenters, `SEAT_Y`/`FOCUS` in the office, and the
-driveway seam at the road — Carlos drives that in-browser (don't burn tokens on
-Playwright). The docked DOM panel side for L1/L2 (`CinematicContent.tsx`) may
-want swapping now that the shots are head-on.
+**The 3D era is over.** This site was previously a WebGL "Katamari descent" (a
+camera orbiting a low-poly planet, résumé-as-places). Carlos scrapped it in July
+2026 — too clunky, perf-heavy — for the 2D Color Worlds concept above. All of
+`src/three/`, `descent.ts`, the depth HUD, and the three.js/drei/zustand/
+framer-motion deps were deleted. Don't reintroduce WebGL.
 
-It's an evolving design — the pads in `structures.tsx` and the orbit rig in
-`path.ts` are the main knobs. **Remaining procedural props (truck, shed, rigs,
-pets) are candidates to swap for cohesive CC0 low-poly glTF packs**
-(Kenney/Quaternius/Poly Pizza) via `useGLTF`. A known dev-only
-`createRoot` warning comes from drei `<Scroll html>` under `StrictMode`;
-production is clean (verified via `npm run preview`).
+The rewrite is built and green (build + lint pass). Open follow-ups: the tier-2
+CC0 toy object set (`public/toys/`), a possible second horizontal interlude
+(Experience), and the content TODOs in `profile.ts` (real LinkedIn URL, résumé
+PDF, location). `public/attribution.md` still lists the old 3D-model credits —
+prune/replace when the toy assets land.
