@@ -17,19 +17,25 @@ export function KineticHeading({
   as: Tag = "h2",
   className = "",
   children,
+  play,
 }: {
   as?: "h1" | "h2";
   className?: string;
   children: ReactNode;
+  // External trigger (chapter store): replaces the IntersectionObserver — the
+  // pinned panels are always geometrically "in view", so IO fires too early
+  // there. Remount with a `key` to replay.
+  play?: boolean;
 }) {
   const { ref, inView } = useInView<HTMLHeadingElement>();
+  const shouldPlay = play ?? inView;
   // Hidden until the split has staged the chars inside their masks; React
   // state (not gsap.set) so re-renders can't re-apply the hidden style.
   const [hidden, setHidden] = useState(() => !reducedMotion());
 
   useGSAP(
     (_, contextSafe) => {
-      if (!inView || reducedMotion() || !ref.current) return;
+      if (!shouldPlay || reducedMotion() || !ref.current) return;
       // Split only after webfonts load, or char positions are measured wrong.
       document.fonts.ready.then(
         contextSafe!(() => {
@@ -51,7 +57,7 @@ export function KineticHeading({
         }),
       );
     },
-    { dependencies: [inView] },
+    { dependencies: [shouldPlay] },
   );
 
   return (
