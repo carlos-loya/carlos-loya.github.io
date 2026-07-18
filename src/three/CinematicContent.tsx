@@ -1,4 +1,6 @@
-import type { ReactNode } from "react";
+import { useRef, type ReactNode, type Ref } from "react";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
 import { FiArrowUpRight } from "react-icons/fi";
 import { FaEnvelope, FaFilePdf, FaGithub, FaLinkedin } from "react-icons/fa";
 import { profile } from "../content/profile";
@@ -8,11 +10,14 @@ import { sites } from "../content/projects";
 import { layers } from "../descent";
 import type { Layer as LayerMeta } from "../descent";
 import { KineticHeading } from "../components/KineticHeading";
+import { useChapterStore } from "./chapters";
+import type { Chapter } from "./path";
 
-// Cinematic presentation: one lean, docked panel per beat, timed to the
-// camera arriving at that structure. Deliberately more compact than the
-// static site (full detail lives there and in the résumé) — text rides
-// inside the 3D moment, docked left over a scrim for legibility.
+// Cinematic presentation: one PINNED panel per chapter, portaled into
+// ScrollControls' sticky fixed layer (DescentCanvas). Panels don't scroll —
+// they slide in when their chapter window is active (chapter store) and out on
+// the travel legs, docked left over a scrim for legibility. Deliberately more
+// compact than the static site (full detail lives there and in the résumé).
 
 const byId = (id: string) => layers.find((l) => l.id === id)!;
 
@@ -31,22 +36,6 @@ function Header({ layer }: { layer: LayerMeta }) {
   );
 }
 
-// One beat: full-height so it maps to a scroll page; content docked left,
-// vertically centered, over a left→right scrim.
-function Beat({ layer, wide, children }: { layer: LayerMeta; wide?: boolean; children: ReactNode }) {
-  return (
-    // pointer-events-none so clicks pass through to the 3D canvas (e.g. the
-    // CRTs); re-enabled only on the docked panel so its links stay clickable.
-    <section className="pointer-events-none relative flex min-h-screen items-center px-6 sm:px-14">
-      <div className="absolute inset-0 bg-gradient-to-r from-bg/95 via-bg/70 to-transparent" />
-      <div className={`pointer-events-auto relative w-full ${wide ? "max-w-2xl" : "max-w-lg"}`}>
-        <Header layer={layer} />
-        <div className="mt-6">{children}</div>
-      </div>
-    </section>
-  );
-}
-
 function Headline() {
   const { headline, accentWord } = profile;
   const idx = headline.indexOf(accentWord);
@@ -60,13 +49,54 @@ function Headline() {
   );
 }
 
-export function CinematicContent() {
+// One pinned, full-viewport panel per chapter. GSAP slides it in when its
+// chapter window is active and out when it isn't; travel legs show no panel.
+// pointer-events: the whole layer is transparent so clicks reach the 3D
+// canvas; only the docked panel opts back in so its links stay clickable.
+function ChapterPanel({ id, layer, wide, children }: {
+  id: Chapter["id"];
+  layer?: LayerMeta;
+  wide?: boolean;
+  children: ReactNode;
+}) {
+  const active = useChapterStore((s) => s.chapter === id);
+  const ref = useRef<HTMLElement>(null);
+  useGSAP(
+    () => {
+      if (!ref.current) return;
+      gsap.to(
+        ref.current,
+        active
+          ? { autoAlpha: 1, y: 0, duration: 0.6, ease: "power3.out" }
+          : { autoAlpha: 0, y: 24, duration: 0.35, ease: "power2.in" },
+      );
+    },
+    { dependencies: [active] },
+  );
   return (
-    // The whole HTML layer is pointer-transparent so clicks reach the 3D CRTs;
-    // only the docked panels (below) opt back in via pointer-events-auto.
-    <div className="pointer-events-none w-screen">
+    <section ref={ref} className="invisible absolute inset-0 flex items-center px-6 opacity-0 sm:px-14">
+      {layer && <div className="absolute inset-0 bg-gradient-to-r from-bg/95 via-bg/70 to-transparent" />}
+      <div className={`pointer-events-auto relative w-full ${wide ? "max-w-2xl" : "max-w-lg"}`}>
+        {layer && (
+          <>
+            <Header layer={layer} />
+            {/* chapter progress rail — scrubs 1:1 with scroll via --ch */}
+            <div className="absolute -left-5 top-0 bottom-0 hidden w-px bg-brd sm:block">
+              <div className="h-full w-full origin-top bg-accent" style={{ transform: "scaleY(var(--ch, 0))" }} />
+            </div>
+          </>
+        )}
+        <div className="mt-6">{children}</div>
+      </div>
+    </section>
+  );
+}
+
+export function CinematicContent({ ref }: { ref: Ref<HTMLDivElement> }) {
+  return (
+    <div ref={ref} className="pointer-events-none relative h-full w-full">
       {/* L0 · SKY */}
-      <Beat layer={byId("top")} wide>
+      <ChapterPanel id="hero" layer={byId("top")} wide>
         <p className="font-mono text-xs uppercase tracking-[0.18em] text-fg-dim">
           {profile.eyebrow}
         </p>
@@ -85,10 +115,10 @@ export function CinematicContent() {
           </a>
         </div>
         <p className="mt-10 font-mono text-[11px] tracking-[0.3em] text-fg-dim/60">↓ SCROLL TO DESCEND</p>
-      </Beat>
+      </ChapterPanel>
 
-      {/* L1 · THE GARDEN — the tech-toolkit garden: the stack, alive (far side of the planet) */}
-      <Beat layer={byId("control")}>
+      {/* L1 · THE GARDEN — the tech-toolkit garden: the stack, alive */}
+      <ChapterPanel id="garden" layer={byId("control")}>
         <KineticHeading className="font-display text-3xl uppercase tracking-[-0.04em] text-fg-strong sm:text-4xl">
           The toolkit garden
         </KineticHeading>
@@ -103,10 +133,10 @@ export function CinematicContent() {
             </div>
           ))}
         </dl>
-      </Beat>
+      </ChapterPanel>
 
-      {/* L2 · THE WORKSHOP — systems shipped, manifested as mechanical rigs in the shed */}
-      <Beat layer={byId("data-plane")}>
+      {/* L2 · THE WORKSHOP — systems shipped, as mechanical rigs in the shed */}
+      <ChapterPanel id="workshop" layer={byId("data-plane")}>
         <KineticHeading className="font-display text-3xl uppercase tracking-[-0.04em] text-fg-strong sm:text-4xl">
           Systems I've shipped
         </KineticHeading>
@@ -121,18 +151,17 @@ export function CinematicContent() {
             </li>
           ))}
         </ol>
-      </Beat>
+      </ChapterPanel>
 
-      {/* L3 · THE ROAD — a travel beat: the planet spins toward the house, flowers
-          popping up along the road. Caption only, no docked panel or scrim. */}
-      <section className="pointer-events-none flex min-h-screen items-end justify-center pb-16">
-        <p className="font-mono text-[11px] tracking-[0.3em] text-fg-dim/70">
+      {/* L3 · THE ROAD — travel caption only, no scrim/dock */}
+      <ChapterPanel id="road">
+        <p className="absolute bottom-16 left-1/2 -translate-x-1/2 whitespace-nowrap font-mono text-[11px] tracking-[0.3em] text-fg-dim/70">
           EN ROUTE — AROUND THE WORLD ↓
         </p>
-      </section>
+      </ChapterPanel>
 
       {/* L4 · THE DRIVEWAY */}
-      <Beat layer={byId("infrastructure")}>
+      <ChapterPanel id="driveway" layer={byId("infrastructure")}>
         <KineticHeading className="font-display text-3xl uppercase tracking-[-0.04em] text-fg-strong sm:text-4xl">
           Where I've worked
         </KineticHeading>
@@ -147,10 +176,10 @@ export function CinematicContent() {
             </li>
           ))}
         </ul>
-      </Beat>
+      </ChapterPanel>
 
       {/* L5 · THE GALLERY */}
-      <Beat layer={byId("proving-ground")}>
+      <ChapterPanel id="gallery" layer={byId("proving-ground")}>
         <KineticHeading className="font-display text-3xl uppercase tracking-[-0.04em] text-fg-strong sm:text-4xl">
           The gallery
         </KineticHeading>
@@ -178,10 +207,10 @@ export function CinematicContent() {
             </li>
           ))}
         </ul>
-      </Beat>
+      </ChapterPanel>
 
       {/* L6 · THE DESK */}
-      <Beat layer={byId("core")}>
+      <ChapterPanel id="desk" layer={byId("core")}>
         <KineticHeading className="font-display text-3xl uppercase tracking-[-0.04em] text-fg-strong sm:text-5xl">
           You've reached the desk
         </KineticHeading>
@@ -206,7 +235,10 @@ export function CinematicContent() {
             3D credits
           </a>
         </p>
-      </Beat>
+      </ChapterPanel>
+
+      {/* live depth readout — CSS counter renders var(--depth), zero React */}
+      <div className="depth-live absolute bottom-5 left-6 font-mono text-[11px] tracking-[0.16em] text-fg-dim" />
     </div>
   );
 }

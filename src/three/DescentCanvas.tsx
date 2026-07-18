@@ -1,8 +1,10 @@
-import { Suspense, useMemo, useRef } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { ScrollControls, Scroll, useScroll } from "@react-three/drei";
+import { ScrollControls, useScroll } from "@react-three/drei";
 import * as THREE from "three";
-import { camOrbit, orbitAngle, interiorT, roadPoint, shotPoint, ARRIVE, SKY_IN_END, INTERIOR, SKY_POS, FOCUS, PAD_A, GARDEN_DX, SHED_DX, GARDEN_SHOT, SHED_SHOT, GARDEN_GAZE, SHED_GAZE, DRIVE_GAZE, DRIVE_LOOK, HALL_GAZE, HALL_WALL_X, HERO_GAZE, PLANET } from "./path";
+import { camOrbit, orbitAngle, interiorT, chapterAt, roadPoint, shotPoint, ARRIVE, SKY_IN_END, INTERIOR, SKY_POS, FOCUS, PAD_A, GARDEN_DX, SHED_DX, GARDEN_SHOT, SHED_SHOT, GARDEN_GAZE, SHED_GAZE, DRIVE_GAZE, DRIVE_LOOK, HALL_GAZE, HALL_WALL_X, HERO_GAZE, PLANET } from "./path";
+import { useChapterStore } from "./chapters";
 import { World } from "./structures";
 import { Birds } from "./Birds";
 import { Skydome } from "./Sky";
@@ -210,16 +212,59 @@ function Scene() {
   );
 }
 
-// The cinematic descent: one flight down through the low-poly world, with the
-// content scrolling in sync via <Scroll html>. Desktop-only (gated by
-// useEnable3D), lazy-loaded. Mobile / reduced-motion get the static DOM site.
+// Publishes {chapter, item, dir} to the store on boundary crossings and writes
+// the continuous values (--ch chapter-local progress, --depth meters) straight
+// to CSS vars on the pinned panel root — no React re-renders at 60fps.
+function ChapterDriver({ rootRef }: { rootRef: React.RefObject<HTMLDivElement | null> }) {
+  const scroll = useScroll();
+  const prevO = useRef(0);
+  useFrame(() => {
+    const o = THREE.MathUtils.clamp(scroll.offset, 0, 1);
+    const { c, local } = chapterAt(o);
+    const id = c?.id ?? null;
+    const item = c ? Math.min(c.items - 1, Math.floor(local * c.items)) : 0;
+    const s = useChapterStore.getState();
+    if (s.chapter !== id || s.item !== item) {
+      useChapterStore.setState({ chapter: id, item, dir: o >= prevO.current ? 1 : -1 });
+    }
+    prevO.current = o;
+    const root = rootRef.current;
+    if (root) {
+      root.style.setProperty("--ch", local.toFixed(4));
+      root.style.setProperty("--depth", String(Math.round(o * 1000)));
+    }
+  });
+  return null;
+}
+
+// Hands the ScrollControls context object (with its sticky `fixed` layer) out
+// of the Canvas so CinematicDescent can portal the DOM panels into it.
+type ScrollState = ReturnType<typeof useScroll>;
+function ScrollStateBridge({ onState }: { onState: (s: ScrollState) => void }) {
+  const scroll = useScroll();
+  useEffect(() => onState(scroll), [scroll, onState]);
+  return null;
+}
+
+// The cinematic descent: one flight down through the low-poly world. The DOM
+// panels are PINNED: they render via createPortal into ScrollControls' sticky
+// `fixed` layer (inside its scroll element, so wheel keeps working over them)
+// and choreograph themselves from the chapter store — they no longer scroll.
+// (This replaces drei's <Scroll html>, whose separate createRoot also caused
+// the dev-only StrictMode warning.) Desktop-only (gated by useEnable3D),
+// lazy-loaded. Mobile / reduced-motion get the static DOM site.
 //
 // Do NOT set Canvas eventSource on a parent wrapper: r3f then applies
 // pointer-events:none to the canvas root, and ScrollControls' overflow div lives
 // inside that root — wheel never hits it and the flight freezes on the hero.
 // ScrollControls already reconnects r3f events to its scroll element for 3D
-// hover/click; keep HTML layers pointer-events:none (see Scroll html + content).
+// hover/click; the fixed layer is pointer-transparent and panels opt back in.
 export function CinematicDescent() {
+  const [scrollState, setScrollState] = useState<ScrollState | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (scrollState) scrollState.fixed.style.pointerEvents = "none";
+  }, [scrollState]);
   return (
     <div className="fixed inset-0">
       <Canvas
@@ -231,11 +276,11 @@ export function CinematicDescent() {
       >
         <ScrollControls pages={12} damping={0.28}>
           <Scene />
-          <Scroll html style={{ width: "100%", pointerEvents: "none" }}>
-            <CinematicContent />
-          </Scroll>
+          <ChapterDriver rootRef={rootRef} />
+          <ScrollStateBridge onState={setScrollState} />
         </ScrollControls>
       </Canvas>
+      {scrollState && createPortal(<CinematicContent ref={rootRef} />, scrollState.fixed)}
     </div>
   );
 }

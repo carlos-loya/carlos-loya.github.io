@@ -42,6 +42,13 @@ h1, h2 {
   font-kerning: none;
 }
 
+/* Live depth readout: CSS renders the integer --depth var set per frame by
+   ChapterDriver — no React involvement at 60fps. */
+.depth-live::after {
+  counter-reset: depth calc(var(--depth, 0));
+  content: "↓ " counter(depth) "m";
+}
+
 /* Crimson selection — small identity detail. */
 ::selection {
   background: var(--color-accent);
