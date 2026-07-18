@@ -1,26 +1,22 @@
-import { Layer } from "./Layer";
+import { Act } from "./Act";
 import { Reveal } from "./Reveal";
 import { skillGroups } from "../content/skills";
-import { layers } from "../descent";
-
-// Skills live at L1 THE GARDEN (the cinematic "toolkit garden"); the static
-// site mirrors that mapping so the shared nav labels stay consistent.
-const meta = layers.find((l) => l.id === "control")!;
+import { world } from "../scroll/worlds";
 
 export function Skills() {
   return (
-    <Layer
-      meta={meta}
+    <Act
+      world={world("toolkit")}
+      eyebrow="Toolkit"
       title="What I reach for"
-      subtitle="The stack I reach for, grouped by depth — language at the surface, platform below, data underneath."
+      subtitle="Languages at the surface, platform and data underneath — the stack behind everything on this page."
     >
       <Reveal className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
         {skillGroups.map((group) => (
           <div
             key={group.title}
-            className="group relative overflow-hidden rounded-lg border border-brd bg-panel p-5 transition-colors hover:border-accent/50"
+            className="group relative overflow-hidden rounded-2xl border border-brd bg-panel p-5 backdrop-blur-sm transition-colors hover:border-accent"
           >
-            {/* corner node that lights on hover */}
             <span className="absolute right-4 top-4 h-1.5 w-1.5 rounded-sm bg-brd transition-colors group-hover:bg-accent" />
             <h3 className="mb-4 font-mono text-[11px] uppercase tracking-[0.14em] text-fg-dim">
               {group.title}
@@ -29,7 +25,7 @@ export function Skills() {
               {group.items.map((item) => (
                 <span
                   key={item}
-                  className="rounded border border-brd bg-panel-2 px-2.5 py-1 text-[13px] text-fg"
+                  className="rounded-md border border-brd bg-panel-2 px-2.5 py-1 text-[13px] text-fg"
                 >
                   {item}
                 </span>
@@ -38,6 +34,6 @@ export function Skills() {
           </div>
         ))}
       </Reveal>
-    </Layer>
+    </Act>
   );
 }

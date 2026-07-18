@@ -1,23 +1,26 @@
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────────────────────────
-   "Descent from the clouds" — a bright, clear-daytime low-poly world.
-   Pale sky, warm-coral sun accent, dark ink text. Token NAMES are kept
-   from the old theme so existing utilities (bg-bg, text-fg-strong,
-   border-brd…) keep resolving — only the values changed.
+   "Color Worlds" — a saturated, whimsical, kinetic-typography site.
+   Each act (.act) sets its own --world-bg / --world-fg / --world-accent
+   (see src/scroll/worlds.ts); the @theme tokens below reference those vars,
+   so every Tailwind color utility (text-fg, bg-panel, border-brd, text-accent)
+   resolves *per world* with zero per-component color code. Fallbacks are the
+   opening cyan world, so chrome outside any act (the nav) stays legible.
    ───────────────────────────────────────────────────────────── */
 @theme {
-  --color-bg: #eef5f8;        /* pale sky — page bg + docked-panel scrim */
-  --color-panel: #ffffff;     /* raised surface / card */
-  --color-panel-2: #f2f6f9;   /* raised surface, one step up */
-  --color-brd: #d3dde4;       /* hairline borders */
-  --color-brd-soft: #e4ebf0;  /* softer dividers */
-  --color-fg: #3a444e;        /* body ink */
-  --color-fg-strong: #161c22; /* headings */
-  --color-fg-dim: #6b7683;    /* muted / captions */
-  --color-accent: #ee6c4d;    /* warm coral — the one saturated accent */
-  --color-accent-hi: #f2542d; /* coral, hover/bright */
-  --color-amber: #e8a33d;     /* sunny secondary */
+  --color-bg: var(--world-bg, #20c4e6);
+  --color-fg: var(--world-fg, #08252e);
+  --color-fg-strong: var(--world-fg, #08252e);
+  --color-fg-dim: color-mix(in srgb, var(--world-fg, #08252e) 62%, transparent);
+  --color-accent: var(--world-accent, #ff5a1f);
+  --color-accent-hi: var(--world-accent, #ff5a1f);
+
+  /* Glassy toy cards / borders derived from the world ink — adapt automatically. */
+  --color-panel: rgba(255, 255, 255, 0.16);
+  --color-panel-2: rgba(255, 255, 255, 0.1);
+  --color-brd: color-mix(in srgb, var(--world-fg, #08252e) 24%, transparent);
+  --color-brd-soft: color-mix(in srgb, var(--world-fg, #08252e) 12%, transparent);
 
   --font-display: "Rubik Mono One", "Space Mono", ui-monospace, monospace;
   --font-sans: "Space Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
@@ -28,10 +31,10 @@ html {
   scroll-behavior: smooth;
   scroll-padding-top: 5rem; /* offset sticky nav for anchor jumps */
   color-scheme: light;
+  background: #20c4e6; /* first-paint cyan before the acts render */
 }
 
 body {
-  background: var(--color-bg);
   color: var(--color-fg);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -42,14 +45,36 @@ h1, h2 {
   font-kerning: none;
 }
 
-/* Live depth readout: CSS renders the integer --depth var set per frame by
-   ChapterDriver — no React involvement at 60fps. */
-.depth-live::after {
-  counter-reset: depth calc(var(--depth, 0));
-  content: "↓ " counter(depth) "m";
+/* ── The color worlds ──────────────────────────────────────────
+   Each act carries its world vars. By default (no JS / reduced-motion) it
+   paints its own solid background → a static, fully-legible multi-color page.
+   In motion mode (ColorWorlds mounted) acts go transparent and the single
+   fixed .worlds-bg layer paints the smooth scroll-blend between worlds. */
+.act {
+  background-color: var(--world-bg);
+  color: var(--color-fg);
+}
+html[data-worlds="motion"] .act {
+  background-color: transparent;
+}
+.worlds-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-color: #20c4e6;
 }
 
-/* Crimson selection — small identity detail. */
+/* Toy garnish drift (ToyField). Transform-only → GPU-cheap. */
+@keyframes toyfloat {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -18px; }
+}
+.toy {
+  animation: toyfloat 7s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Saturated selection — small identity detail. */
 ::selection {
   background: var(--color-accent);
   color: #fff;
