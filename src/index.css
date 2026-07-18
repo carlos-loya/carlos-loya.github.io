@@ -1,44 +1,80 @@
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────────────────────────
-   "Descent Into The Machine" — dark-only EVA-undertone system.
-   Near-black void, one crimson emissive accent, cold infra grays,
-   amber reserved for system readouts. Token NAMES are kept from the
-   old Muted Slate theme so existing utilities (bg-bg, text-fg-strong,
-   border-brd…) keep resolving — only the values changed.
+   "Color Worlds" — a saturated, whimsical, kinetic-typography site.
+   Each act (.act) sets its own --world-bg / --world-fg / --world-accent
+   (see src/scroll/worlds.ts); the @theme tokens below reference those vars,
+   so every Tailwind color utility (text-fg, bg-panel, border-brd, text-accent)
+   resolves *per world* with zero per-component color code. Fallbacks are the
+   opening cyan world, so chrome outside any act (the nav) stays legible.
    ───────────────────────────────────────────────────────────── */
 @theme {
-  --color-bg: #08090c;        /* the void */
-  --color-panel: #0e1117;     /* raised surface */
-  --color-panel-2: #141a24;   /* raised surface, one step up */
-  --color-brd: #232b37;       /* hairline borders */
-  --color-brd-soft: #161c26;  /* softer dividers */
-  --color-fg: #b6bec9;        /* body */
-  --color-fg-strong: #eef2f6; /* headings */
-  --color-fg-dim: #6a7480;    /* muted / captions */
-  --color-accent: #e8102a;    /* EVA crimson — the only saturated color */
-  --color-accent-hi: #ff3347; /* crimson, hover/bright */
-  --color-amber: #ffab30;     /* system readouts only */
+  --color-bg: var(--world-bg, #20c4e6);
+  --color-fg: var(--world-fg, #08252e);
+  --color-fg-strong: var(--world-fg, #08252e);
+  --color-fg-dim: color-mix(in srgb, var(--world-fg, #08252e) 62%, transparent);
+  --color-accent: var(--world-accent, #ff5a1f);
+  --color-accent-hi: var(--world-accent, #ff5a1f);
 
-  --font-display: "Archivo Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-mono: "JetBrains Mono Variable", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  /* Glassy toy cards / borders derived from the world ink — adapt automatically. */
+  --color-panel: rgba(255, 255, 255, 0.16);
+  --color-panel-2: rgba(255, 255, 255, 0.1);
+  --color-brd: color-mix(in srgb, var(--world-fg, #08252e) 24%, transparent);
+  --color-brd-soft: color-mix(in srgb, var(--world-fg, #08252e) 12%, transparent);
+
+  --font-display: "Rubik Mono One", "Space Mono", ui-monospace, monospace;
+  --font-sans: "Space Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-mono: "Space Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 5rem; /* offset sticky nav for anchor jumps */
-  color-scheme: dark;
+  color-scheme: light;
+  background: #20c4e6; /* first-paint cyan before the acts render */
 }
 
 body {
-  background: var(--color-bg);
   color: var(--color-fg);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
-/* Crimson selection — small identity detail. */
+/* Stable char metrics for SplitText headings (kerning shifts move chars mid-split). */
+h1, h2 {
+  font-kerning: none;
+}
+
+/* ── The color worlds ──────────────────────────────────────────
+   Each act carries its world vars. By default (no JS / reduced-motion) it
+   paints its own solid background → a static, fully-legible multi-color page.
+   In motion mode (ColorWorlds mounted) acts go transparent and the single
+   fixed .worlds-bg layer paints the smooth scroll-blend between worlds. */
+.act {
+  background-color: var(--world-bg);
+  color: var(--color-fg);
+}
+html[data-worlds="motion"] .act {
+  background-color: transparent;
+}
+.worlds-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-color: #20c4e6;
+}
+
+/* Toy garnish drift (ToyField). Transform-only → GPU-cheap. */
+@keyframes toyfloat {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -18px; }
+}
+.toy {
+  animation: toyfloat 7s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Saturated selection — small identity detail. */
 ::selection {
   background: var(--color-accent);
   color: #fff;

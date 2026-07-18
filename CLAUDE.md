@@ -6,84 +6,105 @@ Guidance for Claude instances working in this repo.
 
 Carlos Loya's personal portfolio — `carlos-loya.github.io`. Deployed to GitHub
 Pages via `.github/workflows/deploy.yml` on push to `main`. Stack: React 19 +
-Vite + Tailwind v4 (`@theme` tokens, no config file) + framer-motion +
-react-three-fiber.
+Vite + Tailwind v4 (`@theme` tokens, no config file) + **GSAP** (ScrollTrigger,
+SplitText). No WebGL, no three.js — see history below.
 
-## The concept: "Descent Into The Machine"
+## The concept: "Color Worlds"
 
-The site is **one immersive vertical WebGL journey**, not a stack of resume
-sections. Scrolling drives a camera *down* through six depth layers, mapped onto
-Carlos's real work. The visitor falls from the interface to the core.
+The site is **one vertical scroll story through six saturated "color worlds,"**
+each world a chapter of the résumé, carried by **kinetic typography**. As you
+scroll, the full-viewport background **blends between world hues**; one section
+(Work) **pins and turns horizontal** before releasing back to vertical. It's an
+Awwwards Site-of-the-Day bid: creative, unique, and **highly performant**.
 
 Design direction (locked with Carlos — keep to it):
 - **"Show, don't tell."** Demonstrate capability; don't recite a resume.
-- **Evangelion as undertone, not costume** — near-black void, ONE crimson accent
-  (`--color-accent` `#e8102a`), amber only for system readouts, cold infra grays,
-  technical/mono type, ominous quiet. Restraint over maximalism.
-- **Dark-only.** There is no light mode; don't add one.
-- **Audience is employers, clients, AND peers** — spectacle must not cost
-  legibility. The facts stay extractable.
+- **Katamari Damacy = aesthetic, not mechanic.** Keep the hyper-saturated,
+  whimsical, toy-like *vibe* and color. There is **no rolling/physics gimmick**.
+- **Kinetic typography is the signature.** The type is the art — oversized Rubik
+  Mono One that splits/rises out of masks on entry (`KineticHeading`). Color and
+  motion do the heavy lifting; imagery is minimal.
+- **Per-world color.** Each act owns a bold hue; the background scrubs between
+  them on scroll (cyan → lime → gold → coral → pink → violet). Type ink flips per
+  world to stay legible.
+- **Performance-first, zero WebGL.** Pure DOM + SVG/CSS + GSAP — GPU-cheap
+  transforms only. No postprocessing, no shaders, no canvas 3D. It must stay 60fps
+  and the résumé facts must stay legible/extractable.
+- **A light toy garnish** (`ToyField`) scatters code-drawn saturated shapes
+  behind each act — accent, not illustration. It must never upstage the type.
 
-The six layers (source of truth: `src/descent.ts`):
+The six acts (source of truth: `src/scroll/worlds.ts`; array order == scroll
+order). Content comes from `src/content/*` — never fork the data:
 
-| Code | id | Content |
-|---|---|---|
-| L0 SURFACE | `top` | Hero (`profile.ts`) |
-| L1 CONTROL | `control` | Skills (`skills.ts`) |
-| L2 DATA_PLANE | `data-plane` | Independent systems — `experience[0]` |
-| L3 INFRASTRUCTURE | `infrastructure` | Employed roles — `experience.slice(1)` |
-| L4 PROVING_GROUND | `proving-ground` | Live sites (`projects.ts`) |
-| L5 CORE | `core` | Contact |
+| id | World hue | Scene | Content |
+|---|---|---|---|
+| `top` | cyan | Hero | `profile.ts` |
+| `toolkit` | lime | What I reach for | `skills.ts` (`skillGroups`, `techLogos` LogoLoop) |
+| `systems` | gold | Systems I've shipped | `experience[0]` (independent work) |
+| `experience` | coral | Where I've worked | `experience.slice(1)` (employed roles) |
+| `work` | pink | Live in the wild | `projects.ts` — **horizontal pinned gallery** |
+| `contact` | violet | Let's build something | `profile` contact fields (footer) |
 
 ## Architecture (important)
 
-**Two presentations of the same data, chosen at runtime in `App.tsx` via
-`useEnable3D()`:**
+**One presentation** — no runtime 3D-vs-static branch (that's gone). A stack of
+`.act` sections + one fixed animated background layer.
 
-1. **Cinematic descent (capable desktops)** — a full-viewport WebGL flight. Files
-   in `src/three/`:
-   - `DescentCanvas.tsx` → exports `CinematicDescent`: the `<Canvas>` with drei
-     `<ScrollControls pages={6} damping>` (its damping is the momentum — no
-     Lenis/GSAP). Contains the 3D `Scene` and the content in `<Scroll html>`.
-   - `path.ts` — the shared `CatmullRomCurve3` flight path + `BEAT` offsets. The
-     camera samples this by scroll offset with a look-ahead, so it banks/turns
-     (a flight, not an elevator). Content is **six equal 100vh blocks**, so block
-     *i* centers at offset **i/5** — `BEAT` values must match, or structures and
-     text drift apart.
-   - `structures.tsx` — the six procedural environments (gantry, control lattice,
-     data corridor, server hall, deployment bay, core cage), placed along the path
-     at `BEAT` offsets.
-   - `CinematicContent.tsx` — the lean docked text panels (one `<Beat>` per layer),
-     over a left→right scrim for legibility. More compact than the static site by
-     design; full detail lives in the static site + résumé.
-2. **Static site (mobile / reduced-motion / fallback)** — the original stacked
-   `<Layer>` sections (`Hero`, `Skills`, `DataPlane`, `Infrastructure`, `Projects`,
-   `Contact`) + the `DescentHud` gauge. Fully accessible and SEO-visible, stands on
-   its own. This is also the `<Suspense>` fallback while the 3D chunk loads.
-
-**The 3D is gated and lazy.** `useEnable3D()` returns true only on capable desktops
-(`min-width:768px`, no `prefers-reduced-motion`, WebGL present). `CinematicDescent`
-is a `React.lazy` chunk, so the static branch never downloads three.js. **Preserve
-this gate and the static fallback** — it's how accessibility, mobile, and
-legibility are satisfied. Content for both comes from `src/content/*.ts`; never
-fork the data.
+- **`src/scroll/worlds.ts`** — the single source of truth (replaced the old
+  `descent.ts`). `WORLDS: World[]` (`id`/`nav`/`bg`/`fg`/`accent`), `world(id)`,
+  `worldStyle(w)` (the inline `--world-*` vars an act applies), `navWorlds`.
+  Both `Nav` and every act read from here so labels/anchors/colors never drift.
+- **`src/scroll/ColorWorlds.tsx`** — the animated background. A single fixed
+  `.worlds-bg` layer; one `ScrollTrigger` `onUpdate` blends its color between the
+  two acts straddling the viewport center (`gsap.utils.interpolate` over the
+  world `bg` values). Sets `html[data-worlds="motion"]`. **Under reduced motion
+  it does nothing** — then each `.act` paints its own solid world background (the
+  `.act` CSS rule), giving a static, fully-legible multi-color page with no JS.
+- **`src/index.css`** — the color system. `@theme` color tokens are defined as
+  `var(--world-*, <cyan fallback>)`, so every Tailwind color utility (`text-fg`,
+  `bg-panel`, `border-brd`, `text-accent`) **resolves per-world automatically** —
+  each `.act` just sets `--world-bg/fg/accent` and the whole subtree recolors, no
+  per-component color code. Cards are glassy translucent-white panels. Font
+  tokens (`--font-display` Rubik Mono One, `--font-sans`/`--font-mono` Space
+  Mono) are unchanged. `@keyframes toyfloat` drives the garnish drift.
+- **`src/components/Act.tsx`** — the world-aware section wrapper (replaced the
+  old depth-HUD `Layer`). Applies `worldStyle`, scatters `ToyField`, and renders
+  the kinetic header (eyebrow · big display title · subtitle) over the content.
+  Most acts are `<Act world={world("…")} …>`.
+- **`src/components/Projects.tsx`** — the horizontal interlude. A pinned GSAP
+  timeline (`useGSAP` + ScrollTrigger `pin` + `scrub`) translates a flex track
+  sideways; panels are **viewport-relative widths (`44vw`)** so the strip always
+  overflows and there's real distance to scroll (fixed px widths once summed to
+  *less* than a wide viewport and the section died — don't reintroduce that). A
+  `distance <= 0` guard degrades gracefully, and reduced motion renders a plain
+  vertical grid.
+- **`src/components/ToyField.tsx`** — tier-1 code-drawn Katamari "stuff"
+  (ring/blob/star/capsule/dot/cross SVGs) on a slow CSS float; skipped under
+  reduced motion. **Tier-2** (recolored CC0 flat-object SVGs in `public/toys/`,
+  credited in `public/attribution.md`) is planned asset work — drop them in here.
+- **Kept machinery:** `KineticHeading` (GSAP SplitText, self-triggers via
+  `useInView`, reverts to clean markup, reduced-motion-safe), `Reveal`,
+  `useInView`, `LogoLoop`. Reuse them; don't reinvent.
 
 ## Conventions
 
 - **Content lives in `src/content/*.ts`** (`profile`, `skills`, `experience`,
   `projects`). Edit data there; components read from it. Don't hardcode copy in
-  components, and don't fabricate content — mapping to layers must stay truthful.
-- **Design tokens** are in `src/index.css` under `@theme`. Token *names* are kept
-  from the old theme (`bg`, `panel`, `brd`, `fg`, `fg-strong`, `accent`…) so
-  Tailwind utilities like `bg-bg` / `text-fg-strong` resolve. Add `font-display`
-  = Archivo (headlines), `font-sans` = Inter (body), `font-mono` = JetBrains Mono
-  (labels/readouts).
-- **Reveals**: wrap scroll-in animations in `<Reveal>` (`components/Reveal.tsx`);
-  it and `useInView` already no-op under reduced-motion. Reuse them.
-- Keep new 3D scene code in `src/three/`. Scenes are **procedural** (geometry +
-  particles + fog + additive glow) — no imported 3D models. Bloom is faked with
-  additive halos; `@react-three/postprocessing` was removed (React 19 hook
-  mismatch) — don't re-add it without checking that.
+  components, and don't fabricate content — the mapping to acts must stay truthful.
+- **New scroll/world logic goes in `src/scroll/`.** Add or reorder acts by
+  editing `WORLDS` (+ a matching `<Act>` in `App.tsx`); the nav and color driver
+  follow automatically.
+- **Design tokens** are in `src/index.css` under `@theme`, wired to `--world-*`
+  vars. To recolor a world, edit `WORLDS`, not the components. `color-scheme:
+  light`.
+- **Kinetic headings** render through `KineticHeading` (GSAP SplitText char-rise
+  on first view; plain always-visible tag under reduced motion). **Reveals** wrap
+  scroll-in fades via `<Reveal>`. Both already no-op under reduced motion — reuse
+  them rather than writing new scroll animation.
+- **Accessibility is not optional.** Every motion path (color scrub, pin, split,
+  toy drift) must have a reduced-motion fallback that leaves the content static
+  and legible. There is no separate DOM tree — the same markup must read well
+  with JS/animation off.
 
 ## Commands
 
@@ -94,14 +115,25 @@ fork the data.
 ## Verifying changes
 
 Drive it, don't just typecheck. `npm run dev`, then in a browser: scroll the full
-descent BOOT→CORE and confirm each layer + the camera motion; check a narrow
-viewport and reduced-motion both fall back to the static DOM with content intact.
+story top→bottom and confirm the background **blends** cyan→lime→gold→coral→
+pink→violet, each act's **kinetic heading** fires on entry, and the **Work**
+section **pins, scrolls sideways, and releases**; type stays legible in every
+world. Toggle OS reduced-motion (and a narrow viewport) and confirm the page
+falls back to static, fully-legible multi-color sections with content intact.
+(Carlos owns the visual/taste pass — don't burn tokens looping on Playwright
+screenshots for aesthetics; a quick functional check when debugging a broken
+interaction is fine.)
 
-## Status / next
+## History / status
 
-The cinematic descent is built and verified end to end. It's an evolving design —
-the structures in `structures.tsx` and their `BEAT` placement are the main knobs
-for art direction; expect to fine-tune per-beat framing, camera speed variation,
-and structure detail. A known dev-only `createRoot` warning comes from drei
-`<Scroll html>` under `StrictMode`; production is clean (verified via
-`npm run preview`).
+**The 3D era is over.** This site was previously a WebGL "Katamari descent" (a
+camera orbiting a low-poly planet, résumé-as-places). Carlos scrapped it in July
+2026 — too clunky, perf-heavy — for the 2D Color Worlds concept above. All of
+`src/three/`, `descent.ts`, the depth HUD, and the three.js/drei/zustand/
+framer-motion deps were deleted. Don't reintroduce WebGL.
+
+The rewrite is built and green (build + lint pass). Open follow-ups: the tier-2
+CC0 toy object set (`public/toys/`), a possible second horizontal interlude
+(Experience), and the content TODOs in `profile.ts` (real LinkedIn URL, résumé
+PDF, location). `public/attribution.md` still lists the old 3D-model credits —
+prune/replace when the toy assets land.
