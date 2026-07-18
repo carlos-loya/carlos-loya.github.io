@@ -2,14 +2,15 @@ import { Suspense, useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { ScrollControls, Scroll, useScroll } from "@react-three/drei";
 import * as THREE from "three";
-import { camOrbit, orbitAngle, roadPoint, shotPoint, ARRIVE, INTERIOR, SKY_POS, FOCUS, easeBeat, PAD_A, GARDEN_DX, SHED_DX, GARDEN_SHOT, SHED_SHOT, GARDEN_GAZE, SHED_GAZE, DRIVE_GAZE, DRIVE_LOOK, HALL_GAZE, HALL_WALL_X, HERO_GAZE, PLANET } from "./path";
+import { camOrbit, orbitAngle, interiorT, roadPoint, shotPoint, ARRIVE, SKY_IN_END, INTERIOR, SKY_POS, FOCUS, PAD_A, GARDEN_DX, SHED_DX, GARDEN_SHOT, SHED_SHOT, GARDEN_GAZE, SHED_GAZE, DRIVE_GAZE, DRIVE_LOOK, HALL_GAZE, HALL_WALL_X, HERO_GAZE, PLANET } from "./path";
 import { World } from "./structures";
 import { Birds } from "./Birds";
 import { Skydome } from "./Sky";
 import { CinematicContent } from "./CinematicContent";
 
-// Flies the camera down PATH from the scroll offset. easeBeat() makes it dwell at
-// each beat. In the hall of fame the look turns to the −x wall so the site
+// Flies the camera down PATH from the scroll offset. The chapter plateaus in
+// orbitAngle/interiorT (path.ts CHAPTERS) hold it locked at each beat.
+// In the hall of fame the look turns to the −x wall so the site
 // monitors pass head-on; at the end it settles onto the seated figure. A damped
 // pointer offset gives parallax. ScrollControls damping is the momentum.
 // ?still disables the mouse parallax (stable screenshots / no-jitter preview).
@@ -34,16 +35,16 @@ function CameraRig() {
   const parallax = useRef(new THREE.Vector2());
   useFrame((state, dt) => {
     const o = THREE.MathUtils.clamp(scroll.offset, 0, 1);
-    const e = easeBeat(o);
 
-    if (e < ARRIVE) {
+    if (o < ARRIVE) {
       // ORBIT the planet: look target is the pad's real position (always framed).
-      camOrbit(e, tmp);
-      // sky-in: swoop from the high hero vantage into the garden orbit over [0, 1/6].
-      // A straight lerp would cut THROUGH the (large) globe, so instead arc AROUND it:
-      // slerp the offset direction from the planet center and ease the radius down —
-      // the camera stays a constant orbit-radius clear of the surface the whole way.
-      const k = THREE.MathUtils.smoothstep(o, 0, 1 / 6);
+      camOrbit(o, tmp);
+      // sky-in: swoop from the high hero vantage into the garden orbit over
+      // [0, SKY_IN_END]. A straight lerp would cut THROUGH the (large) globe, so
+      // instead arc AROUND it: slerp the offset direction from the planet center
+      // and ease the radius down — the camera stays a constant orbit-radius
+      // clear of the surface the whole way.
+      const k = THREE.MathUtils.smoothstep(o, 0, SKY_IN_END);
       if (k >= 1) {
         pos.copy(tmp);
       } else {
@@ -56,9 +57,9 @@ function CameraRig() {
         qA.identity().slerp(qB, k);
         pos.copy(v0).applyQuaternion(qA).multiplyScalar(len).add(PLANET.center);
       }
-      roadPoint(orbitAngle(e), look);
+      roadPoint(orbitAngle(o), look);
       // ease into the interior entry just before arrival, so the hand-off is seamless
-      const seam = THREE.MathUtils.smoothstep(e, ARRIVE - 0.12, ARRIVE);
+      const seam = THREE.MathUtils.smoothstep(o, ARRIVE - 0.1, ARRIVE);
       if (seam > 0) {
         INTERIOR.getPoint(0, tmp2);
         pos.lerp(tmp2, seam);
@@ -66,8 +67,9 @@ function CameraRig() {
         look.lerp(tmp2, seam);
       }
     } else {
-      // INTERIOR flight (door → gallery → desk), unchanged world-space curve.
-      const t = (e - ARRIVE) / (1 - ARRIVE);
+      // INTERIOR flight (door → gallery → desk): world-space curve sampled by
+      // interiorT — plateaus hold the camera through the driveway/gallery chapters.
+      const t = interiorT(o);
       INTERIOR.getPoint(THREE.MathUtils.clamp(t, 0, 1), pos);
       INTERIOR.getPoint(Math.min(t + 0.05, 1), look);
     }
@@ -81,7 +83,7 @@ function CameraRig() {
     // garden (L1) then shed (L2): the camera eases OFF the trail into a composed
     // head-on shot of each scene — position swings across the road (camDx) while
     // the gaze lands on the scene center — then rejoins the road as the envelope
-    // fades. easeBeat's dwell holds the shot at the beat.
+    // fades. The chapter plateau holds the shot for the whole hold window.
     const gg =
       THREE.MathUtils.smoothstep(o, GARDEN_GAZE.from, GARDEN_GAZE.from + 0.05) *
       (1 - THREE.MathUtils.smoothstep(o, GARDEN_GAZE.to - 0.05, GARDEN_GAZE.to));
@@ -108,13 +110,13 @@ function CameraRig() {
     side.set(HALL_WALL_X, 1.9, pos.z);
     look.lerp(side, g);
     // settle onto the seated figure as we turn into the office wing
-    look.lerp(FOCUS, THREE.MathUtils.smoothstep(o, 0.9, 1));
+    look.lerp(FOCUS, THREE.MathUtils.smoothstep(o, 0.92, 1));
 
     // ROLL the camera's up with the orbit tilt (blended in with the sky-in), so
     // the far side of the planet renders right-side-up and the horizon rolls as
     // we travel around the world. Exactly +Y at the hero (blend 0) and from
     // arrival on (orbitAngle 0) — hero + interior framing untouched.
-    const aCam = THREE.MathUtils.smoothstep(o, 0, 1 / 6) * orbitAngle(e);
+    const aCam = THREE.MathUtils.smoothstep(o, 0, SKY_IN_END) * orbitAngle(o);
     up.set(0, 1, 0).applyAxisAngle(X_AXIS, aCam);
 
     if (!STILL) {
@@ -158,7 +160,7 @@ function SkyRig() {
   const lightTarget = useMemo(() => new THREE.Object3D(), []);
   useFrame(() => {
     const o = THREE.MathUtils.clamp(scroll.offset, 0, 1);
-    if (g.current) g.current.rotation.x = THREE.MathUtils.smoothstep(o, 0, 1 / 6) * orbitAngle(easeBeat(o));
+    if (g.current) g.current.rotation.x = THREE.MathUtils.smoothstep(o, 0, SKY_IN_END) * orbitAngle(o);
   });
   return (
     <group position={[PLANET.center.x, PLANET.center.y, PLANET.center.z]}>
@@ -227,7 +229,7 @@ export function CinematicDescent() {
         gl={{ antialias: true }}
         onCreated={({ gl }) => gl.setClearColor("#8fc2e6")}
       >
-        <ScrollControls pages={7} damping={0.28}>
+        <ScrollControls pages={12} damping={0.28}>
           <Scene />
           <Scroll html style={{ width: "100%", pointerEvents: "none" }}>
             <CinematicContent />

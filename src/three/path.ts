@@ -73,16 +73,53 @@ export function roadPoint(a: number, target = new THREE.Vector3()) {
   return target.set(0, PLANET.R, 0).applyAxisAngle(X, a).add(PLANET.center);
 }
 
-// o (0..1) → orbit tilt angle. Piecewise-linear through the pad keyframes; the
-// easeBeat dwell is applied by the caller. Monotonic garden→0 (one way around).
-// Held at the garden angle before L1 (the sky-in is blended separately).
-const O_GARDEN = 1 / 6;
-const O_WORKSHOP = 2 / 6;
-export const ARRIVE = 4 / 6; // o at which the orbit reaches the house and hands off
+// ── chapters: the story beats' HOLD windows in scroll-offset space ───
+// During a chapter the camera is LOCKED (orbitAngle / interiorT plateau) while
+// the pinned DOM panel steps through `items` micro-beats and the 3D props
+// react. Travel legs live in the gaps. 12 pages total (DescentCanvas).
+// items counts mirror src/content: skillGroups 3, experience[0].points 3,
+// experience.slice(1) 3, sites 2 — the panels map the real arrays; these
+// numbers only drive the scroll thresholds.
+export type Chapter = {
+  id: "hero" | "garden" | "workshop" | "road" | "driveway" | "gallery" | "desk";
+  start: number;
+  end: number;
+  items: number;
+};
+export const CHAPTERS: Chapter[] = [
+  { id: "hero", start: 0.0, end: 0.06, items: 1 },
+  { id: "garden", start: 0.14, end: 0.26, items: 3 },
+  { id: "workshop", start: 0.34, end: 0.46, items: 3 },
+  { id: "road", start: 0.48, end: 0.56, items: 1 },
+  { id: "driveway", start: 0.58, end: 0.7, items: 3 },
+  { id: "gallery", start: 0.78, end: 0.88, items: 2 },
+  { id: "desk", start: 0.93, end: 1.0, items: 1 },
+];
+
+// The chapter containing offset o (null on a travel leg) + 0..1 local progress.
+export function chapterAt(o: number): { c: Chapter | null; local: number } {
+  for (const c of CHAPTERS) {
+    if (o >= c.start && o <= c.end) return { c, local: (o - c.start) / (c.end - c.start) };
+  }
+  return { c: null, local: 0 };
+}
+
+// End of the sky-in dive == start of the garden chapter (CameraRig/SkyRig blend).
+export const SKY_IN_END = CHAPTERS[1].start;
+
+const GARDEN_END = CHAPTERS[1].end;
+const WORKSHOP_START = CHAPTERS[2].start;
+const WORKSHOP_END = CHAPTERS[2].end;
+export const ARRIVE = CHAPTERS[4].start; // orbit reaches the house; interior takes over
+
+// o (0..1) → orbit tilt angle. Plateaus across the chapter windows (the camera
+// lock — the dwell easeBeat used to fake), linear ramps on the travel legs.
+// Monotonic garden→0 (one way around).
 export function orbitAngle(o: number) {
-  if (o <= O_GARDEN) return PAD_A.garden;
-  if (o <= O_WORKSHOP) return THREE.MathUtils.lerp(PAD_A.garden, PAD_A.workshop, (o - O_GARDEN) / (O_WORKSHOP - O_GARDEN));
-  if (o <= ARRIVE) return THREE.MathUtils.lerp(PAD_A.workshop, 0, (o - O_WORKSHOP) / (ARRIVE - O_WORKSHOP));
+  if (o <= GARDEN_END) return PAD_A.garden;
+  if (o <= WORKSHOP_START) return THREE.MathUtils.lerp(PAD_A.garden, PAD_A.workshop, (o - GARDEN_END) / (WORKSHOP_START - GARDEN_END));
+  if (o <= WORKSHOP_END) return PAD_A.workshop;
+  if (o <= ARRIVE) return THREE.MathUtils.lerp(PAD_A.workshop, 0, (o - WORKSHOP_END) / (ARRIVE - WORKSHOP_END));
   return 0;
 }
 
@@ -143,47 +180,51 @@ export const HALL_TO = -5.5;
 
 // As the camera descends the road it pivots its gaze: LEFT onto the garden (L1),
 // then RIGHT onto the shed (L2). Windows straddle the L1 (1/6) and L2 (2/6) beats.
-export const GARDEN_GAZE = { from: 0.09, to: 0.25 } as const;
-export const SHED_GAZE = { from: 0.27, to: 0.41 } as const;
+export const GARDEN_GAZE = { from: 0.09, to: 0.31 } as const;
+export const SHED_GAZE = { from: 0.29, to: 0.51 } as const;
 
 // At the driveway beat the camera (arrived outside the door) turns its gaze onto
 // the truck + job boxes (front-right) before diving through the door.
 // Ends before the door sequence so the gaze returns to the door as it opens.
-export const DRIVE_GAZE = { from: 0.6, to: 0.69 } as const;
+export const DRIVE_GAZE = { from: 0.53, to: 0.71 } as const;
 export const DRIVE_LOOK = new THREE.Vector3(4.6, 0.4, 6.5);
 
 // The camera eases its gaze onto the gallery wall across this window. Shifted a
 // touch later to match the added door-dwell (frames are reached later in scroll).
-export const HALL_GAZE = { from: 0.83, to: 0.93 } as const;
+export const HALL_GAZE = { from: 0.73, to: 0.93 } as const;
 
 // The hero: at the very top the camera gazes out level over the clouds, blending
 // into the orbit look-at as the descent begins.
-export const HERO_GAZE = 0.12;
+export const HERO_GAZE = 0.1;
 
 // The camera settles onto the seated figure as it turns into the office wing.
 export const FOCUS = new THREE.Vector3(-9.9, 1.3, -10.5);
 export const GROUND_Y = 0;
 
-// Seven beats, evenly spaced (i/6).
-export const BEAT = {
-  surface: 0,
-  garden: 1 / 6,
-  workshop: 2 / 6,
-  road: 3 / 6,
-  driveway: 4 / 6,
-  gallery: 5 / 6,
-  desk: 1,
-} as const;
-
 // The door swings open while the camera is still paused OUTSIDE the threshold
-// (INTERIOR dwell), completing before it crosses the doorway (~t≈0.3 / o≈0.76) so
-// you fly through a fully-open door rather than one still swinging.
-export const DOOR_OPEN = { from: 0.69, to: 0.75 } as const;
+// (interiorT holds u=0 through the driveway chapter), completing right as the
+// camera crosses the door plane (u≈0.3 at o≈DOOR_OPEN.to).
+export const DOOR_OPEN = { from: 0.7, to: 0.735 } as const;
 
-// Camera easing: dwell at each beat, quicken between. Zero at every k/6.
-const N = 6;
-const A = 0.55;
-export function easeBeat(o: number) {
-  const e = o - (A * Math.sin(2 * Math.PI * N * o)) / (2 * Math.PI * N);
-  return THREE.MathUtils.clamp(e, 0, 1);
+// Interior curve progress u(o) with plateaus: hold at the door through the
+// driveway chapter, hold mid-hall through the gallery chapter, then the desk.
+// (offset, u) keyframes — piecewise linear, monotonic.
+const INTERIOR_KEYS: readonly [number, number][] = [
+  [ARRIVE, 0],
+  [0.7, 0], // driveway hold — parked outside the door
+  [0.735, 0.3], // through the (now fully open) door plane
+  [0.78, 0.62], // arrive mid-hall, facing the frame wall
+  [0.88, 0.62], // gallery hold
+  [1, 1], // settle at the desk
+];
+export function interiorT(o: number) {
+  const x = THREE.MathUtils.clamp(o, ARRIVE, 1);
+  for (let i = 1; i < INTERIOR_KEYS.length; i++) {
+    const [o1, t1] = INTERIOR_KEYS[i];
+    if (x <= o1) {
+      const [o0, t0] = INTERIOR_KEYS[i - 1];
+      return THREE.MathUtils.lerp(t0, t1, (x - o0) / (o1 - o0));
+    }
+  }
+  return 1;
 }
