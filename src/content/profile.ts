@@ -1,12 +1,12 @@
 // Site-wide profile/contact data. Edit here — components read from this.
 export const profile = {
   name: "Carlos Loya",
-  eyebrow: "Full-stack engineer · backend-strong",
-  // Hero headline; wrap the accented word in <em> handled by the Hero component.
-  headline: "I build the systems and platforms that data runs on.",
-  accentWord: "systems",
+  eyebrow: "Full-stack · backend-strong",
+  // Hero headline; wrap the accented phrase in <em> handled by the Hero component.
+  headline: "I build the whole stack.",
+  accentWord: "whole stack",
   lede:
-    "I'm Carlos Loya — a full-stack engineer who's happiest close to the backend: Kubernetes operators, data pipelines, and the infrastructure that keeps them honest. I bring that same rigor up to the interface.",
+    "Frontend, backend, data, infra, QA — a generalist who lives closest to the backend.",
 
   email: "exafterdev@gmail.com",
   github: "https://github.com/carlos-loya",
