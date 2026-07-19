@@ -1,10 +1,10 @@
 import { Nav } from "./components/Nav";
 import { ColorWorlds } from "./scroll/ColorWorlds";
 import { Hero } from "./components/Hero";
-import { Skills } from "./components/Skills";
-import { DataPlane } from "./components/DataPlane";
-import { Infrastructure } from "./components/Infrastructure";
 import { Projects } from "./components/Projects";
+import { Infrastructure } from "./components/Infrastructure";
+import { GitHub } from "./components/GitHub";
+import { Skills } from "./components/Skills";
 import { Contact } from "./components/Contact";
 
 // One presentation: the vertical "Color Worlds" scroll story. ColorWorlds paints
@@ -17,10 +17,10 @@ function App() {
       <Nav />
       <main>
         <Hero />
-        <Skills />
-        <DataPlane />
-        <Infrastructure />
         <Projects />
+        <Infrastructure />
+        <GitHub />
+        <Skills />
         <Contact />
       </main>
     </>

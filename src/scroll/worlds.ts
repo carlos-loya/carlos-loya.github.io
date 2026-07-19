@@ -14,12 +14,15 @@ export interface World {
 // Sequence: cyan sky → lime → gold → coral → pink → violet finale. Bright until
 // the violet close (which flips to cream ink). fg is a deep tint of the hue so
 // text sits in the same family; accent is a deliberate contrast.
+// The ids/nav ride the fixed cyan→…→violet gradient in scroll order; to reorder
+// sections, move the id/nav labels between slots (keep the hues in gradient order)
+// and match App.tsx's render order to this array.
 export const WORLDS: World[] = [
   { id: "top",        nav: "Top",        bg: "#20c4e6", fg: "#08252e", accent: "#ff5a1f" },
-  { id: "toolkit",    nav: "Toolkit",    bg: "#b4e219", fg: "#1b2a02", accent: "#e6007a" },
-  { id: "systems",    nav: "Systems",    bg: "#ffc61a", fg: "#3a2600", accent: "#d6006e" },
-  { id: "experience", nav: "Experience", bg: "#ff6b3d", fg: "#3a1200", accent: "#1a1046" },
-  { id: "work",       nav: "Work",       bg: "#ff4fa3", fg: "#3d0022", accent: "#6a00ff" },
+  { id: "work",       nav: "Work",       bg: "#b4e219", fg: "#1b2a02", accent: "#e6007a" },
+  { id: "experience", nav: "Experience", bg: "#ffc61a", fg: "#3a2600", accent: "#d6006e" },
+  { id: "github",     nav: "GitHub",     bg: "#ff6b3d", fg: "#3a1200", accent: "#1a1046" },
+  { id: "toolkit",    nav: "Toolkit",    bg: "#ff4fa3", fg: "#3d0022", accent: "#6a00ff" },
   { id: "contact",    nav: "Contact",    bg: "#7b5cff", fg: "#fdf0ff", accent: "#ffd23f" },
 ];
 

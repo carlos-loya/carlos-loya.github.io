@@ -4,7 +4,6 @@ import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Act } from "./Act";
-import { KineticHeading } from "./KineticHeading";
 import { ToyField } from "./ToyField";
 import { sites, type Site } from "../content/projects";
 import { world, worldStyle } from "../scroll/worlds";
@@ -12,9 +11,12 @@ import { world, worldStyle } from "../scroll/worlds";
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 const w = world("work");
-const prefersReduced = () =>
+// The deck pins + hijacks scroll — too heavy for touch/narrow. Fall back (like
+// ScrubHeading) to the static vertical grid under reduced motion OR below md.
+const deckMotionOff = () =>
   typeof window !== "undefined" &&
-  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  (window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+    !window.matchMedia("(min-width: 768px)").matches);
 
 function Card({ site }: { site: Site }) {
   return (
@@ -74,35 +76,92 @@ function Card({ site }: { site: Site }) {
 
 export function Projects() {
   const root = useRef<HTMLElement>(null);
-  const track = useRef<HTMLDivElement>(null);
-  const [reduced] = useState(prefersReduced);
+  const pinWrap = useRef<HTMLDivElement>(null);
+  const deck = useRef<HTMLDivElement>(null);
+  const [motionOff] = useState(deckMotionOff);
 
-  // Pin the section and translate the track sideways as you scroll — vertical
-  // scroll becomes lateral travel across the gallery, then releases. Distance
-  // scrolled == distance the track must move. Skipped under reduced motion.
+  // Pin the section; a scrubbed timeline first sweeps the headline right→left,
+  // then decks the cards one at a time — each front card lifts, rotates, and
+  // tucks to the back while the next promotes forward. Fully reversible.
   useGSAP(
     () => {
-      if (reduced || !track.current) return;
-      const distance = () => track.current!.scrollWidth - window.innerWidth;
-      if (distance() <= 0) return; // strip fits the viewport — nothing to pin
-      gsap.to(track.current, {
-        x: () => -distance(),
-        ease: "none",
+      if (motionOff || !deck.current) return;
+      const cards = gsap.utils.toArray<HTMLElement>(".deck-card", deck.current);
+      const n = cards.length;
+      if (!n) return;
+
+      // Resting pose for a card at stack-depth d (0 = front, higher = further back).
+      const poseFor = (d: number) => ({
+        xPercent: 0,
+        yPercent: d === 0 ? 0 : -7 * d, // peek up behind the front card
+        scale: 1 - 0.06 * d,
+        rotate: d === 0 ? 0 : d % 2 ? 4 : -4,
+        opacity: d === 0 ? 1 : Math.max(0.4, 1 - 0.28 * d),
+        zIndex: 30 - d,
+      });
+      cards.forEach((card, i) => gsap.set(card, poseFor(i)));
+
+      // Query the heading by class at effect time (a captured ref can point at a
+      // stale node under StrictMode; the class query always hits the live DOM).
+      const headingEl = root.current!.querySelector<HTMLElement>(".work-title");
+
+      const vh = () => window.innerHeight;
+
+      // Header slides in right→left as the section rises into view — triggered on
+      // the OUTER section (never pinned), so it settles before the pin engages.
+      // Use a timeline (not a bare tween): under StrictMode a standalone tween's
+      // ScrollTrigger can orphan from its animation, leaving the scrub inert.
+      gsap
+        .timeline({
+          scrollTrigger: { trigger: root.current, start: "top bottom", end: "top top", scrub: 1 },
+        })
+        .fromTo(
+          headingEl,
+          { xPercent: 105, opacity: 0 },
+          { xPercent: 0, opacity: 1, ease: "none" },
+        );
+
+      // Pin the inner wrapper and deck the cards below the header.
+      const tl = gsap.timeline({
         scrollTrigger: {
-          trigger: root.current,
+          trigger: pinWrap.current,
           start: "top top",
-          end: () => "+=" + distance(),
-          pin: true,
+          end: () => "+=" + vh() * n,
+          pin: pinWrap.current,
           scrub: 1,
           invalidateOnRefresh: true,
         },
       });
+
+      // Each advance sends the front card to the back and shifts the rest forward.
+      for (let k = 0; k < n - 1; k++) {
+        const label = "adv" + k;
+        tl.addLabel(label);
+        cards.forEach((card, c) => {
+          const dNew = (c - (k + 1) + n) % n;
+          if (c === k) {
+            // Outgoing front card: lift over the top, then drop to the back.
+            tl.to(
+              card,
+              {
+                keyframes: [
+                  { yPercent: -40, scale: 1.05, rotate: 9, opacity: 1, zIndex: 40, duration: 0.5, ease: "power2.in" },
+                  { ...poseFor(dNew), duration: 0.5, ease: "power2.out" },
+                ],
+              },
+              label,
+            );
+          } else {
+            tl.to(card, { ...poseFor(dNew), duration: 1, ease: "power2.inOut" }, label);
+          }
+        });
+      }
     },
-    { scope: root, dependencies: [reduced] },
+    { scope: root, dependencies: [motionOff] },
   );
 
   // Fallback: a plain vertical grid, fully legible, no pin/hijack.
-  if (reduced) {
+  if (motionOff) {
     return (
       <Act
         world={w}
@@ -126,26 +185,38 @@ export function Projects() {
       ref={root}
       id="work"
       style={worldStyle(w)}
-      className="act relative isolate h-screen overflow-hidden"
+      className="act relative isolate mt-[35vh] overflow-hidden"
     >
       <ToyField />
-      <div ref={track} className="relative z-10 flex h-full items-center gap-8 px-6 will-change-transform sm:px-8">
-        {/* Intro panel — the kinetic header rides along at the head of the strip. */}
-        <div className="flex w-[82vw] shrink-0 flex-col justify-center md:w-[44vw]">
-          <p className="font-mono text-xs uppercase tracking-[0.2em] text-fg-dim">Work</p>
-          <KineticHeading className="mt-4 font-display text-[2.4rem] uppercase leading-[0.9] tracking-[-0.04em] text-fg-strong sm:text-6xl md:text-7xl">
+
+      {/* Inner wrapper is what gets pinned (keeps the entrance trigger, which
+          lives on the section, clear of the pin). */}
+      <div ref={pinWrap} className="relative flex h-screen flex-col overflow-hidden">
+        {/* Header band: the title slides in from the right, then holds above the
+            deck for the whole pinned run. */}
+        <div className="relative z-20 shrink-0 overflow-hidden px-6 pt-24 sm:pt-28">
+          <div
+            aria-hidden
+            className="work-title whitespace-nowrap font-display text-[7.5vw] uppercase leading-none tracking-[-0.04em] text-fg-strong"
+          >
             Live in the wild
-          </KineticHeading>
-          <p className="mt-5 max-w-[42ch] text-base leading-relaxed text-fg-dim">
-            Sites I've designed, built, and shipped — each one running in production.
-          </p>
-          <p className="mt-8 inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.24em] text-accent">
-            SCROLL <span aria-hidden>→</span>
-          </p>
+          </div>
         </div>
-        {sites.map((site) => (
-          <Card key={site.name} site={site} />
-        ))}
+        {/* Screen-reader heading for the pinned, animated section. */}
+        <h2 className="sr-only">Work — live in the wild</h2>
+
+        {/* The card deck fills the space below the header; all cards share one
+            grid cell so they stack centered. */}
+        <div ref={deck} className="relative z-10 grid flex-1 place-items-center px-6 pb-12">
+          {sites.map((site) => (
+            <div
+              key={site.name}
+              className="deck-card w-[min(88vw,880px)] will-change-transform [grid-area:1/1] [&>article]:w-full [&>article]:max-w-none"
+            >
+              <Card site={site} />
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );
