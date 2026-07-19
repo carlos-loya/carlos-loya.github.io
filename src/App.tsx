@@ -1,5 +1,6 @@
 import { Nav } from "./components/Nav";
 import { ColorWorlds } from "./scroll/ColorWorlds";
+import { OrbTraveler } from "./components/OrbTraveler";
 import { Hero } from "./components/Hero";
 import { Projects } from "./components/Projects";
 import { Infrastructure } from "./components/Infrastructure";
@@ -23,6 +24,10 @@ function App() {
         <Skills />
         <Contact />
       </main>
+      {/* After <main> so its scroll triggers are created/refreshed last — they
+          measure #work/#experience against the final layout (incl. the Work pin).
+          z-index:-1 keeps it behind all section content, above the bg layer. */}
+      <OrbTraveler />
     </>
   );
 }

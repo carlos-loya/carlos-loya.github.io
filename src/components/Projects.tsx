@@ -7,16 +7,11 @@ import { Act } from "./Act";
 import { ToyField } from "./ToyField";
 import { sites, type Site } from "../content/projects";
 import { world, worldStyle } from "../scroll/worlds";
+import { motionOff } from "../scroll/motion";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 const w = world("work");
-// The deck pins + hijacks scroll — too heavy for touch/narrow. Fall back (like
-// ScrubHeading) to the static vertical grid under reduced motion OR below md.
-const deckMotionOff = () =>
-  typeof window !== "undefined" &&
-  (window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
-    !window.matchMedia("(min-width: 768px)").matches);
 
 function Card({ site }: { site: Site }) {
   return (
@@ -78,14 +73,14 @@ export function Projects() {
   const root = useRef<HTMLElement>(null);
   const pinWrap = useRef<HTMLDivElement>(null);
   const deck = useRef<HTMLDivElement>(null);
-  const [motionOff] = useState(deckMotionOff);
+  const [off] = useState(motionOff);
 
   // Pin the section; a scrubbed timeline first sweeps the headline right→left,
   // then decks the cards one at a time — each front card lifts, rotates, and
   // tucks to the back while the next promotes forward. Fully reversible.
   useGSAP(
     () => {
-      if (motionOff || !deck.current) return;
+      if (off || !deck.current) return;
       const cards = gsap.utils.toArray<HTMLElement>(".deck-card", deck.current);
       const n = cards.length;
       if (!n) return;
@@ -157,11 +152,11 @@ export function Projects() {
         });
       }
     },
-    { scope: root, dependencies: [motionOff] },
+    { scope: root, dependencies: [off] },
   );
 
   // Fallback: a plain vertical grid, fully legible, no pin/hijack.
-  if (motionOff) {
+  if (off) {
     return (
       <Act
         world={w}

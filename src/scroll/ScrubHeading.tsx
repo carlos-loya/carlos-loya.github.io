@@ -4,14 +4,9 @@ import { useGSAP } from "@gsap/react";
 import { SplitText } from "gsap/SplitText";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { RECIPES } from "./recipes";
+import { motionOff } from "./motion";
 
 gsap.registerPlugin(useGSAP, SplitText, ScrollTrigger);
-
-const mq = (q: string) =>
-  typeof window !== "undefined" && window.matchMedia(q).matches;
-// Skip the whole effect on reduced-motion or narrow viewports → static heading.
-const motionOff = () =>
-  mq("(prefers-reduced-motion: reduce)") || !mq("(min-width: 768px)");
 
 // A heading whose characters play a per-char recipe forward on scroll-down and
 // rewind on scroll-up: GSAP SplitText + a scrubbed ScrollTrigger tied to the
