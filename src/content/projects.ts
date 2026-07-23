@@ -29,7 +29,7 @@ export const sites: Site[] = [
       "Brand and launch site for a live RC racing and FPV broadcast concept — an eight-car, FPV-piloted arena activation built mall-, festival-, and corporate-ready.",
     url: "https://microgp-arena.vercel.app/",
     image: "/previews/microgp-arena.jpg",
-    embed: false, // Vercel default sends frame-blocking headers — screenshot it.
+    embed: true,
     tags: ["Landing page", "Motorsport", "Branding"],
   },
 ];
