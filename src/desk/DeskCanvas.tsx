@@ -4,6 +4,8 @@ import * as THREE from "three";
 import { DeskModel, type FocusId, type SceneFraming } from "./DeskModel";
 import { MonitorScreen } from "./MonitorScreen";
 import { Overlays } from "./Overlays";
+import { Curtain } from "./Curtain";
+import { useMusic } from "./useMusic";
 
 // Camera framing knobs — tuned by eye against the real model. *_DIR is the
 // viewpoint direction (from the subject toward the camera); focusing an object
@@ -87,7 +89,14 @@ type DeskWin = Window & { __desk?: Record<string, { x: number; y: number } | und
 
 export function DeskCanvas() {
   const [focus, setFocus] = useState<FocusId | null>(null);
-  const [hover, setHover] = useState<FocusId | null>(null);
+  // Hover has two independent sources — the 3D pointer and the DOM legend — so they
+  // can't stomp each other (leaving the scene fires onHover(null) right as the
+  // legend fires onHover(id)). Merge them; the menu wins when both are set.
+  const [sceneHover, setSceneHover] = useState<FocusId | null>(null);
+  const [menuHover, setMenuHover] = useState<FocusId | null>(null);
+  const hover = menuHover ?? sceneHover;
+  const [entered, setEntered] = useState(false);
+  const music = useMusic(focus);
   const framingRef = useRef<SceneFraming | null>(null);
   // Ref feeds the per-frame rig; state re-renders the in-canvas MonitorScreen once
   // the monitor box is measured.
@@ -126,16 +135,25 @@ export function DeskCanvas() {
         />
         <directionalLight position={[-6, 5, -4]} intensity={0.5} />
         <Suspense fallback={null}>
-          <DeskModel onReady={onReady} onFocus={setFocus} onHover={setHover} />
+          <DeskModel hover={hover} onReady={onReady} onFocus={setFocus} onHover={setSceneHover} />
           <MonitorScreen
             framing={framing}
             active={focus === "monitor"}
+            hovered={hover === "monitor"}
             onClose={() => setFocus(null)}
           />
         </Suspense>
         <CameraRig focus={focus} framingRef={framingRef} />
       </Canvas>
-      <Overlays focus={focus} hover={hover} onClose={() => setFocus(null)} />
+      <Overlays
+        focus={focus}
+        hover={hover}
+        music={music}
+        onFocus={setFocus}
+        onHover={setMenuHover}
+        onClose={() => setFocus(null)}
+      />
+      {!entered && <Curtain music={music} onEnter={() => setEntered(true)} />}
     </div>
   );
 }

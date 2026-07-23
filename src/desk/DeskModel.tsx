@@ -16,7 +16,7 @@ const INTERACTIVE: FocusId[] = ["monitor", "ipod", "phone", "clipboard", "floppy
 // gentler pop because MonitorScreen's screenshot plane is placed from a static
 // box measurement and a big scale would visibly desync it.
 const HOVER_SCALE = 1.08;
-const MONITOR_HOVER_SCALE = 1.03;
+export const MONITOR_HOVER_SCALE = 1.03;
 
 // The desktop cluster the hero view frames on — we want the desk in focus, not
 // the whole room. Any of these that exist in the model define the hero box.
@@ -52,10 +52,12 @@ const tmpScale = new THREE.Vector3(); // scratch for the hover bob lerp
 useGLTF.preload("/models/desk.glb", true);
 
 export function DeskModel({
+  hover,
   onReady,
   onFocus,
   onHover,
 }: {
+  hover: FocusId | null;
   onReady: (f: SceneFraming) => void;
   onFocus: (id: FocusId) => void;
   onHover: (id: FocusId | null) => void;
@@ -63,7 +65,6 @@ export function DeskModel({
   // `true` = decode Draco geometry (drei's default CDN decoder).
   const { scene } = useGLTF("/models/desk.glb", true);
   const groupRef = useRef<THREE.Group>(null);
-  const hoverRef = useRef<FocusId | null>(null);
   // Per-object rest transform + live handle, captured after framing is measured.
   const bobRef = useRef<{ obj: THREE.Object3D; id: FocusId; baseScale: THREE.Vector3 }[]>([]);
 
@@ -121,11 +122,12 @@ export function DeskModel({
   }, [scene, onReady]);
 
   // Pop the hovered object up in scale; everything else eases back to rest.
-  // Framerate-independent damping (same idiom as CameraRig).
+  // Driven by the shared `hover` prop, so hovering the DOM legend pops the object
+  // too (not just a direct 3D-pointer hover). Framerate-independent damping.
   useFrame((_, dt) => {
     const k = 1 - Math.pow(0.002, dt);
     for (const b of bobRef.current) {
-      const on = hoverRef.current === b.id;
+      const on = hover === b.id;
       const target = on ? (b.id === "monitor" ? MONITOR_HOVER_SCALE : HOVER_SCALE) : 1;
       b.obj.scale.lerp(tmpScale.copy(b.baseScale).multiplyScalar(target), k);
     }
@@ -144,12 +146,10 @@ export function DeskModel({
       }}
       onPointerMove={(e: ThreeEvent<PointerEvent>) => {
         const id = pickInteractive(e);
-        hoverRef.current = id;
         onHover(id);
         document.body.style.cursor = id ? "pointer" : "";
       }}
       onPointerOut={() => {
-        hoverRef.current = null;
         onHover(null);
         document.body.style.cursor = "";
       }}
