@@ -1,85 +1,25 @@
 @import "tailwindcss";
 
-/* ─────────────────────────────────────────────────────────────
-   "Color Worlds" — a saturated, whimsical, kinetic-typography site.
-   Each act (.act) sets its own --world-bg / --world-fg / --world-accent
-   (see src/scroll/worlds.ts); the @theme tokens below reference those vars,
-   so every Tailwind color utility (text-fg, bg-panel, border-brd, text-accent)
-   resolves *per world* with zero per-component color code. Fallbacks are the
-   opening cyan world, so chrome outside any act (the nav) stays legible.
-   ───────────────────────────────────────────────────────────── */
 @theme {
-  --color-bg: var(--world-bg, #20c4e6);
-  --color-fg: var(--world-fg, #08252e);
-  --color-fg-strong: var(--world-fg, #08252e);
-  --color-fg-dim: color-mix(in srgb, var(--world-fg, #08252e) 62%, transparent);
-  --color-accent: var(--world-accent, #ff5a1f);
-  --color-accent-hi: var(--world-accent, #ff5a1f);
-
-  /* Glassy toy cards / borders derived from the world ink — adapt automatically. */
-  --color-panel: rgba(255, 255, 255, 0.16);
-  --color-panel-2: rgba(255, 255, 255, 0.1);
-  --color-brd: color-mix(in srgb, var(--world-fg, #08252e) 24%, transparent);
-  --color-brd-soft: color-mix(in srgb, var(--world-fg, #08252e) 12%, transparent);
-
   --font-display: "Rubik Mono One", "Space Mono", ui-monospace, monospace;
   --font-sans: "Space Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --font-mono: "Space Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 
 html {
-  scroll-behavior: smooth;
-  scroll-padding-top: 5rem; /* offset sticky nav for anchor jumps */
-  color-scheme: light;
-  background: #20c4e6; /* first-paint cyan before the acts render */
+  color-scheme: dark;
+  background: #0e0f13; /* matches the desk canvas / fallback backdrop */
 }
 
 body {
-  color: var(--color-fg);
+  color: #fff;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
-/* Stable char metrics for SplitText headings (kerning shifts move chars mid-split). */
-h1, h2 {
-  font-kerning: none;
+/* Desk-scene overlay panels slide in from the right. */
+@keyframes panelIn {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
-
-/* ── The color worlds ──────────────────────────────────────────
-   Each act carries its world vars. By default (no JS / reduced-motion) it
-   paints its own solid background → a static, fully-legible multi-color page.
-   In motion mode (ColorWorlds mounted) acts go transparent and the single
-   fixed .worlds-bg layer paints the smooth scroll-blend between worlds. */
-.act {
-  background-color: var(--world-bg);
-  color: var(--color-fg);
-}
-html[data-worlds="motion"] .act {
-  background-color: transparent;
-}
-.worlds-bg {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background-color: #20c4e6;
-}
-
-/* Toy garnish drift (ToyField). Transform-only → GPU-cheap. */
-@keyframes toyfloat {
-  0%, 100% { translate: 0 0; }
-  50% { translate: 0 -18px; }
-}
-.toy {
-  animation: toyfloat 7s ease-in-out infinite;
-  will-change: transform;
-}
-
-/* Saturated selection — small identity detail. */
-::selection {
-  background: var(--color-accent);
-  color: #fff;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-}
+.panel-in { animation: panelIn 0.32s ease-out; }
