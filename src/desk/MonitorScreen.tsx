@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Html, useTexture } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { sites } from "../content/projects";
-import type { SceneFraming } from "./DeskModel";
+import { MONITOR_HOVER_SCALE, type SceneFraming } from "./DeskModel";
 
 // ── Screen placement knobs — tune live against the model ────────────────────
 // The monitor's bounding box includes the stand, so the screen occupies the
@@ -22,10 +23,12 @@ const LABEL_GAP = 0.12; // gap beyond the screen edge (world units)
 export function MonitorScreen({
   framing,
   active,
+  hovered,
   onClose,
 }: {
   framing: SceneFraming | null;
   active: boolean;
+  hovered: boolean;
   onClose: () => void;
 }) {
   const [idx, setIdx] = useState(0);
@@ -36,6 +39,17 @@ export function MonitorScreen({
     arr.forEach((t) => (t.colorSpace = THREE.SRGBColorSpace));
     return arr;
   }, [textures]);
+
+  // Bob the screen in lockstep with the monitor's hover pop (same scale + damping
+  // as DeskModel) so the website image doesn't stay put inside a growing bezel.
+  const groupRef = useRef<THREE.Group>(null);
+  const tmpScale = useRef(new THREE.Vector3()).current;
+  useFrame((_, dt) => {
+    const g = groupRef.current;
+    if (!g) return;
+    const target = hovered ? MONITOR_HOVER_SCALE : 1;
+    g.scale.lerp(tmpScale.set(target, target, target), 1 - Math.pow(0.002, dt));
+  });
 
   const mon = framing?.targets.monitor;
   if (!mon || sites.length === 0) return null;
@@ -49,6 +63,7 @@ export function MonitorScreen({
 
   return (
     <group
+      ref={groupRef}
       position={[center.x - (size.x / 2) * SCREEN_PUSH, center.y + size.y * SCREEN_Y, center.z]}
       rotation={[0, -Math.PI / 2 + SCREEN_YAW, 0]}
     >
