@@ -25,3 +25,7 @@ dist-ssr
 
 # Playwright MCP scratch artifacts
 .playwright-mcp/
+
+# Blender working sources for the desk (not served; compressed copy lives in
+# public/models/). ~160MB — kept local, recompress per CLAUDE.md.
+art/

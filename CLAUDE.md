@@ -6,105 +6,87 @@ Guidance for Claude instances working in this repo.
 
 Carlos Loya's personal portfolio — `carlos-loya.github.io`. Deployed to GitHub
 Pages via `.github/workflows/deploy.yml` on push to `main`. Stack: React 19 +
-Vite + Tailwind v4 (`@theme` tokens, no config file) + **GSAP** (ScrollTrigger,
-SplitText). No WebGL, no three.js — see history below.
+Vite + Tailwind v4 (`@theme` tokens, no config file). The site is a **single
+interactive 3D desk scene** built with **React Three Fiber** (`three` +
+`@react-three/fiber` + `@react-three/drei`). GSAP is still installed (leftover
+from the retired scroll story) but the desk scene doesn't use it.
 
-## The concept: "Color Worlds"
+## The concept: the desk
 
-The site is **one vertical scroll story through six saturated "color worlds,"**
-each world a chapter of the résumé, carried by **kinetic typography**. As you
-scroll, the full-viewport background **blends between world hues**; one section
-(Work) **pins and turns horizontal** before releasing back to vertical. It's an
-Awwwards Site-of-the-Day bid: creative, unique, and **highly performant**.
+The homepage is **one 3D scene of Carlos's desk** (his own Blender model,
+`art/desk.glb`). You look at the desk; **objects on it are interactive** — click
+the **monitor** to focus it and reveal selected work, click the **iPod** to focus
+it, play music, and see about/contact. Reference feel: diyabasu.com, growon.kr.
+The desk is meant to **grow over time** (more clickable objects, more polish).
 
-Design direction (locked with Carlos — keep to it):
-- **"Show, don't tell."** Demonstrate capability; don't recite a resume.
-- **Katamari Damacy = aesthetic, not mechanic.** Keep the hyper-saturated,
-  whimsical, toy-like *vibe* and color. There is **no rolling/physics gimmick**.
-- **Kinetic typography is the signature.** The type is the art — oversized Rubik
-  Mono One that splits/rises out of masks on entry (`KineticHeading`). Color and
-  motion do the heavy lifting; imagery is minimal.
-- **Per-world color.** Each act owns a bold hue; the background scrubs between
-  them on scroll (cyan → lime → gold → coral → pink → violet). Type ink flips per
-  world to stay legible.
-- **Performance-first, zero WebGL.** Pure DOM + SVG/CSS + GSAP — GPU-cheap
-  transforms only. No postprocessing, no shaders, no canvas 3D. It must stay 60fps
-  and the résumé facts must stay legible/extractable.
-- **A light toy garnish** (`ToyField`) scatters code-drawn saturated shapes
-  behind each act — accent, not illustration. It must never upstage the type.
+Design direction (locked with Carlos):
+- **"Show, don't tell."** Demonstrate capability; don't recite a résumé.
+- **The desk is the hero.** Frame the desk, not the whole room. Camera looks at
+  the monitor screen. Clicking an object glides the camera in and fades a content
+  panel in from the right; Esc / clicking empty space returns to the hero view.
+- **Performance & accessibility.** The WebGL scene mounts **only** on capable
+  desktops (`useEnable3D`: WebGL + `min-width:768px` + no reduced-motion). Mobile
+  / no-WebGL / reduced-motion get `MinimalFallback` (static résumé + links), which
+  is also the accessible content path. `DeskCanvas` is `React.lazy`, so the
+  fallback path never downloads three.js.
 
-The six acts (source of truth: `src/scroll/worlds.ts`; array order == scroll
-order). Content comes from `src/content/*` — never fork the data:
+## Architecture
 
-| id | World hue | Scene | Content |
-|---|---|---|---|
-| `top` | cyan | Hero | `profile.ts` |
-| `toolkit` | lime | What I reach for | `skills.ts` (`skillGroups`, `techLogos` LogoLoop) |
-| `systems` | gold | Systems I've shipped | `experience[0]` (independent work) |
-| `experience` | coral | Where I've worked | `experience.slice(1)` (employed roles) |
-| `work` | pink | Live in the wild | `projects.ts` — **horizontal pinned gallery** |
-| `contact` | violet | Let's build something | `profile` contact fields (footer) |
+`App.tsx` gates on `useEnable3D()` → `<DeskCanvas>` or `<MinimalFallback>`.
+Everything for the scene lives in **`src/desk/`**:
 
-## Architecture (important)
+- **`src/desk/DeskCanvas.tsx`** — the full-bleed `<Canvas>`, lighting, `focus`
+  state (`null | "monitor" | "ipod"`), and the `CameraRig` (`useFrame` that lerps
+  the camera toward a per-focus framing; hero view has subtle pointer parallax).
+  **Camera framing knobs live here** (`HERO_DIR`, `FOCUS_DIR`, `*_FILL`, `FOV`) —
+  these are the taste dials; tune them live, they are not derived. A DEV-only
+  `window.__desk` publishes each object's projected screen position for tuning.
+  Renders `<Overlays>` (DOM) outside the canvas.
+- **`src/desk/DeskModel.tsx`** — loads `/models/desk.glb` (`useGLTF(url, true)`,
+  Draco), normalizes it (scale to a target height, ground at y=0, shadows on),
+  and measures framing: each interactive object's bounding box + the **hero box**
+  (union of the desktop cluster `monitor/ipod/keyboard/mouse` — so the hero frames
+  the desk, not the room). One pointer handler on the group walks each hit up to
+  its nearest ancestor named in `INTERACTIVE` and reports focus/hover.
+- **`src/desk/Overlays.tsx`** — the DOM panels over the canvas (glassy dark, site
+  fonts). MonitorPanel = `projects.ts` (`sites`) + `github.ts` (`repos`); IpodPanel
+  = about/contact from `profile.ts` + a `MusicPlayer`. Esc / close button clears
+  focus; a hover pill hints "Click the monitor →".
+- **`src/desk/useEnable3D.ts`** — the mount gate (recovered from the old 3D era).
+- **`src/components/MinimalFallback.tsx`** — the static fallback / a11y page.
 
-**One presentation** — no runtime 3D-vs-static branch (that's gone). A stack of
-`.act` sections + one fixed animated background layer.
+**Interactive objects** are matched by node **name** in the glb (`monitor`,
+`ipod`, `keyboard`, `mouse`, `office`/`Window*` backdrop). To add one, add its
+name to `INTERACTIVE` (and `DESK_ITEMS` if it should shape the hero framing) and
+give it a panel in `Overlays.tsx`.
 
-- **`src/scroll/worlds.ts`** — the single source of truth (replaced the old
-  `descent.ts`). `WORLDS: World[]` (`id`/`nav`/`bg`/`fg`/`accent`), `world(id)`,
-  `worldStyle(w)` (the inline `--world-*` vars an act applies), `navWorlds`.
-  Both `Nav` and every act read from here so labels/anchors/colors never drift.
-- **`src/scroll/ColorWorlds.tsx`** — the animated background. A single fixed
-  `.worlds-bg` layer; one `ScrollTrigger` `onUpdate` blends its color between the
-  two acts straddling the viewport center (`gsap.utils.interpolate` over the
-  world `bg` values). Sets `html[data-worlds="motion"]`. **Under reduced motion
-  it does nothing** — then each `.act` paints its own solid world background (the
-  `.act` CSS rule), giving a static, fully-legible multi-color page with no JS.
-- **`src/index.css`** — the color system. `@theme` color tokens are defined as
-  `var(--world-*, <cyan fallback>)`, so every Tailwind color utility (`text-fg`,
-  `bg-panel`, `border-brd`, `text-accent`) **resolves per-world automatically** —
-  each `.act` just sets `--world-bg/fg/accent` and the whole subtree recolors, no
-  per-component color code. Cards are glassy translucent-white panels. Font
-  tokens (`--font-display` Rubik Mono One, `--font-sans`/`--font-mono` Space
-  Mono) are unchanged. `@keyframes toyfloat` drives the garnish drift.
-- **`src/components/Act.tsx`** — the world-aware section wrapper (replaced the
-  old depth-HUD `Layer`). Applies `worldStyle`, scatters `ToyField`, and renders
-  the kinetic header (eyebrow · big display title · subtitle) over the content.
-  Most acts are `<Act world={world("…")} …>`.
-- **`src/components/Projects.tsx`** — the horizontal interlude. A pinned GSAP
-  timeline (`useGSAP` + ScrollTrigger `pin` + `scrub`) translates a flex track
-  sideways; panels are **viewport-relative widths (`44vw`)** so the strip always
-  overflows and there's real distance to scroll (fixed px widths once summed to
-  *less* than a wide viewport and the section died — don't reintroduce that). A
-  `distance <= 0` guard degrades gracefully, and reduced motion renders a plain
-  vertical grid.
-- **`src/components/ToyField.tsx`** — tier-1 code-drawn Katamari "stuff"
-  (ring/blob/star/capsule/dot/cross SVGs) on a slow CSS float; skipped under
-  reduced motion. **Tier-2** (recolored CC0 flat-object SVGs in `public/toys/`,
-  credited in `public/attribution.md`) is planned asset work — drop them in here.
-- **Kept machinery:** `KineticHeading` (GSAP SplitText, self-triggers via
-  `useInView`, reverts to clean markup, reduced-motion-safe), `Reveal`,
-  `useInView`, `LogoLoop`. Reuse them; don't reinvent.
+## The desk asset
+
+`art/desk.glb` is the **37MB source** (with `art/desk.blend`) — a working file,
+**not served** (only `public/` is deployed). The **served, compressed** copy is
+`public/models/desk.glb` (~1.4MB). Recompress from source with:
+
+```
+npx --yes @gltf-transform/cli optimize art/desk.glb public/models/desk.glb \
+  --compress draco --texture-compress webp --texture-size 1024 \
+  --join false --flatten false
+```
+
+`--join false --flatten false` is **mandatory** — `optimize`'s default join/flatten
+passes merge meshes and **destroy the node names** the click handlers rely on.
+
+**Music:** drop tracks in `public/audio/` and list them in the `TRACKS` array in
+`Overlays.tsx` (`{ title, src: "/audio/..." }`). Empty ⇒ no player, panel still works.
 
 ## Conventions
 
 - **Content lives in `src/content/*.ts`** (`profile`, `skills`, `experience`,
-  `projects`). Edit data there; components read from it. Don't hardcode copy in
-  components, and don't fabricate content — the mapping to acts must stay truthful.
-- **New scroll/world logic goes in `src/scroll/`.** Add or reorder acts by
-  editing `WORLDS` (+ a matching `<Act>` in `App.tsx`); the nav and color driver
-  follow automatically.
-- **Design tokens** are in `src/index.css` under `@theme`, wired to `--world-*`
-  vars. To recolor a world, edit `WORLDS`, not the components. `color-scheme:
-  light`.
-- **Kinetic headings** render through `KineticHeading` (GSAP SplitText char-rise
-  on first view; plain always-visible tag under reduced motion). **Reveals** wrap
-  scroll-in fades via `<Reveal>`. Both already no-op under reduced motion — reuse
-  them rather than writing new scroll animation.
-- **Accessibility is not optional.** Every motion path (color scrub, pin, split,
-  toy drift) must have a reduced-motion fallback that leaves the content static
-  and legible. There is no separate DOM tree — the same markup must read well
-  with JS/animation off.
+  `projects`, `github`). Edit data there; components read from it. Don't hardcode
+  copy in components, and don't fabricate content.
+- **Scene code goes in `src/desk/`.** Recolor/reframe via the constants in
+  `DeskCanvas.tsx`, not by editing the model.
+- **Accessibility is not optional.** `MinimalFallback` must stay a complete,
+  legible content path (name, blurb, links, résumé) with no WebGL.
 
 ## Commands
 
@@ -114,26 +96,28 @@ order). Content comes from `src/content/*` — never fork the data:
 
 ## Verifying changes
 
-Drive it, don't just typecheck. `npm run dev`, then in a browser: scroll the full
-story top→bottom and confirm the background **blends** cyan→lime→gold→coral→
-pink→violet, each act's **kinetic heading** fires on entry, and the **Work**
-section **pins, scrolls sideways, and releases**; type stays legible in every
-world. Toggle OS reduced-motion (and a narrow viewport) and confirm the page
-falls back to static, fully-legible multi-color sections with content intact.
-(Carlos owns the visual/taste pass — don't burn tokens looping on Playwright
-screenshots for aesthetics; a quick functional check when debugging a broken
-interaction is fine.)
+Drive it. `npm run dev`, then in a browser: the desk renders framed on the
+monitor; hovering the monitor/iPod shows a pointer + hint; clicking each glides
+the camera in and slides its panel in; Esc / empty-space click returns to hero.
+Toggle OS reduced-motion (or a narrow viewport) → `MinimalFallback` renders with
+résumé + links intact. `npm run build` + `npm run lint` clean. (Carlos owns the
+visual/taste pass — the camera-framing constants are his dials; don't burn tokens
+looping on screenshots for aesthetics, a quick functional check is fine.)
 
 ## History / status
 
-**The 3D era is over.** This site was previously a WebGL "Katamari descent" (a
-camera orbiting a low-poly planet, résumé-as-places). Carlos scrapped it in July
-2026 — too clunky, perf-heavy — for the 2D Color Worlds concept above. All of
-`src/three/`, `descent.ts`, the depth HUD, and the three.js/drei/zustand/
-framer-motion deps were deleted. Don't reintroduce WebGL.
+This site has been through three concepts. **v1:** a WebGL "Katamari descent"
+(camera orbiting a low-poly planet) — scrapped July 2026 as clunky/perf-heavy.
+**v2:** a 2D GSAP "Color Worlds" vertical scroll story. **v3 (current):** the 3D
+desk scene above (July 2026), reusing the recovered `useEnable3D` + glb-normalize
+patterns from v1.
 
-The rewrite is built and green (build + lint pass). Open follow-ups: the tier-2
-CC0 toy object set (`public/toys/`), a possible second horizontal interlude
-(Experience), and the content TODOs in `profile.ts` (real LinkedIn URL, résumé
-PDF, location). `public/attribution.md` still lists the old 3D-model credits —
-prune/replace when the toy assets land.
+The Color Worlds files are **still in the tree but no longer mounted** — dead code
+safe to delete once the desk is signed off: `scroll/ColorWorlds.tsx`,
+`scroll/worlds.ts`, `components/{Nav,Act,ToyField,OrbTraveler,Hero,Projects,
+Infrastructure,GitHub,Skills,Contact,LogoLoop,KineticHeading,Reveal}.tsx`, and the
+`.act`/`.worlds-bg` CSS in `index.css`. `App.tsx` has a `ponytail:` note listing them.
+
+Open follow-ups: real music tracks (`public/audio/`), more clickable desk objects,
+content TODOs in `profile.ts` (real LinkedIn URL, location), pruning the dead
+Color Worlds files, and `public/attribution.md` still lists old 3D-model credits.

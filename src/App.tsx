@@ -1,34 +1,22 @@
-import { Nav } from "./components/Nav";
-import { ColorWorlds } from "./scroll/ColorWorlds";
-import { OrbTraveler } from "./components/OrbTraveler";
-import { Hero } from "./components/Hero";
-import { Projects } from "./components/Projects";
-import { Infrastructure } from "./components/Infrastructure";
-import { GitHub } from "./components/GitHub";
-import { Skills } from "./components/Skills";
-import { Contact } from "./components/Contact";
+import { lazy, Suspense } from "react";
+import { useEnable3D } from "./desk/useEnable3D";
+import { MinimalFallback } from "./components/MinimalFallback";
 
-// One presentation: the vertical "Color Worlds" scroll story. ColorWorlds paints
-// the animated background (and no-ops under reduced motion, where each .act shows
-// its own solid world color — a static, fully-legible multi-color page).
+// The site is a single interactive 3D desk scene (src/desk/*). Capable desktops
+// get the WebGL desk; mobile / no-WebGL / reduced-motion get the static
+// MinimalFallback (also the accessible content path). DeskCanvas is lazy so the
+// fallback path never downloads three.js.
+const DeskCanvas = lazy(() =>
+  import("./desk/DeskCanvas").then((m) => ({ default: m.DeskCanvas })),
+);
+
 function App() {
+  const enable3D = useEnable3D();
+  if (!enable3D) return <MinimalFallback />;
   return (
-    <>
-      <ColorWorlds />
-      <Nav />
-      <main>
-        <Hero />
-        <Projects />
-        <Infrastructure />
-        <GitHub />
-        <Skills />
-        <Contact />
-      </main>
-      {/* After <main> so its scroll triggers are created/refreshed last — they
-          measure #work/#experience against the final layout (incl. the Work pin).
-          z-index:-1 keeps it behind all section content, above the bg layer. */}
-      <OrbTraveler />
-    </>
+    <Suspense fallback={<div className="fixed inset-0 bg-[#0e0f13]" />}>
+      <DeskCanvas />
+    </Suspense>
   );
 }
 
