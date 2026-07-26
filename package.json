@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "compress-model": "npx --yes @gltf-transform/cli optimize art/desk.glb public/models/desk.glb --compress draco --texture-compress webp --texture-size 1024 --join false --flatten false"
   },
   "dependencies": {
     "@fontsource/rubik-mono-one": "^5.2.8",

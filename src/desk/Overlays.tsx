@@ -3,12 +3,15 @@ import { repos } from "../content/github";
 import type { FocusId } from "./DeskModel";
 import { TRACKS, type Music } from "./useMusic";
 
+// Action phrases — shared by the Explore menu and the hover pill, so both name
+// what a click reveals. Order here sets the Explore menu order.
 const LABEL: Record<FocusId, string> = {
-  monitor: "the monitor",
-  ipod: "the iPod",
-  phone: "the phone",
-  clipboard: "the clipboard",
-  floppy: "the floppy disk",
+  monitor: "View deployed websites",
+  coffee: "View work experience",
+  phone: "View contact",
+  clipboard: "View résumé",
+  floppy: "View GitHub projects",
+  ipod: "Play music",
 };
 
 export function Overlays({
@@ -83,7 +86,7 @@ export function Overlays({
       {/* hover affordance in the hero view */}
       {!focus && hover && (
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-4 py-2 font-mono text-sm text-white/90 backdrop-blur-sm">
-          Click {LABEL[hover]} →
+          {LABEL[hover]} →
         </div>
       )}
 

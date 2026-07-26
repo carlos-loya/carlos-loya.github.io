@@ -1,8 +1,9 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { DeskModel, type FocusId, type SceneFraming } from "./DeskModel";
+import { DeskModel, type FocusId, type SceneFraming, type StickerId } from "./DeskModel";
 import { MonitorScreen } from "./MonitorScreen";
+import { CoffeeCard } from "./CoffeeCard";
 import { Overlays } from "./Overlays";
 import { Curtain } from "./Curtain";
 import { useMusic } from "./useMusic";
@@ -79,6 +80,7 @@ function CameraRig({
       (window as DeskWin).__desk = {
         monitor: f.targets.monitor && project(f.targets.monitor.center),
         ipod: f.targets.ipod && project(f.targets.ipod.center),
+        coffee: f.targets.coffee && project(f.targets.coffee.center),
       };
     }
   });
@@ -96,6 +98,8 @@ export function DeskCanvas() {
   const [menuHover, setMenuHover] = useState<FocusId | null>(null);
   const hover = menuHover ?? sceneHover;
   const [entered, setEntered] = useState(false);
+  // Which mug sticker's company card is open (only meaningful while coffee-focused).
+  const [openSticker, setOpenSticker] = useState<StickerId | null>(null);
   const music = useMusic(focus);
   const framingRef = useRef<SceneFraming | null>(null);
   // Ref feeds the per-frame rig; state re-renders the in-canvas MonitorScreen once
@@ -106,14 +110,21 @@ export function DeskCanvas() {
     setFraming(f);
   }, []);
 
-  // ESC returns to the hero view.
+  // ESC peels back one layer: close an open sticker card first, else return to hero.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setFocus(null);
+      if (e.key !== "Escape") return;
+      if (openSticker) setOpenSticker(null);
+      else setFocus(null);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [openSticker]);
+
+  // A sticker card only makes sense on the mug — drop it if focus moves elsewhere.
+  useEffect(() => {
+    if (focus !== "coffee") setOpenSticker(null);
+  }, [focus]);
 
   return (
     <div className="fixed inset-0 bg-[#0e0f13]">
@@ -122,7 +133,7 @@ export function DeskCanvas() {
         dpr={[1, 1.75]}
         camera={{ position: [4, 3, 6], fov: FOV }}
         gl={{ antialias: true }}
-        onPointerMissed={() => setFocus(null)}
+        onPointerMissed={() => (openSticker ? setOpenSticker(null) : setFocus(null))}
       >
         <color attach="background" args={["#0e0f13"]} />
         <hemisphereLight args={["#ffffff", "#3a3a46", 1.1]} />
@@ -135,12 +146,26 @@ export function DeskCanvas() {
         />
         <directionalLight position={[-6, 5, -4]} intensity={0.5} />
         <Suspense fallback={null}>
-          <DeskModel hover={hover} onReady={onReady} onFocus={setFocus} onHover={setSceneHover} />
+          <DeskModel
+            hover={hover}
+            focus={focus}
+            stickerActive={focus === "coffee"}
+            onReady={onReady}
+            onFocus={setFocus}
+            onHover={setSceneHover}
+            onSticker={setOpenSticker}
+          />
           <MonitorScreen
             framing={framing}
             active={focus === "monitor"}
             hovered={hover === "monitor"}
             onClose={() => setFocus(null)}
+          />
+          <CoffeeCard
+            framing={framing}
+            sticker={openSticker}
+            onClose={() => setOpenSticker(null)}
+            onClearHover={() => setSceneHover(null)}
           />
         </Suspense>
         <CameraRig focus={focus} framingRef={framingRef} />
