@@ -64,16 +64,16 @@ give it a panel in `Overlays.tsx`.
 
 `art/desk.glb` is the **37MB source** (with `art/desk.blend`) — a working file,
 **not served** (only `public/` is deployed). The **served, compressed** copy is
-`public/models/desk.glb` (~1.4MB). Recompress from source with:
+`public/models/desk.glb` (~2.1MB). After re-exporting `art/desk.glb` from Blender,
+recompress the served copy with:
 
 ```
-npx --yes @gltf-transform/cli optimize art/desk.glb public/models/desk.glb \
-  --compress draco --texture-compress webp --texture-size 1024 \
-  --join false --flatten false
+npm run compress-model
 ```
 
-`--join false --flatten false` is **mandatory** — `optimize`'s default join/flatten
-passes merge meshes and **destroy the node names** the click handlers rely on.
+That runs `@gltf-transform/cli optimize` with `--join false --flatten false`, which
+is **mandatory** — `optimize`'s default join/flatten passes merge meshes and
+**destroy the node names** the click handlers rely on.
 
 **Music:** drop tracks in `public/audio/` and list them in the `TRACKS` array in
 `Overlays.tsx` (`{ title, src: "/audio/..." }`). Empty ⇒ no player, panel still works.
